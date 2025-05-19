@@ -1,0 +1,33 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+.turbo/
+
+# Logs & coverage
+*.log
+coverage/
+
+# System/IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets / Keys
+*.pem
+*.key
+*.crt
+*.p12
+firebase-adminsdk*.json
+
+# Deployment configs
+.netlify/
+.firebase/
+.aws/

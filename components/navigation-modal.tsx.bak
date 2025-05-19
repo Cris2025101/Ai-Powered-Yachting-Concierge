@@ -1,0 +1,1430 @@
+"use client"
+
+import { motion, AnimatePresence } from "framer-motion"
+import { ChevronLeft, Grid, Anchor, Users, User, ArrowUp, X, Loader2, Download, Printer, Edit } from "lucide-react"
+import { useState, useRef } from "react"
+import { CharterBookingModal } from "./charter-booking-modal"
+
+// Add keyframe animations for light reflections
+const lightReflectionKeyframes = `
+@keyframes moveLight1 {
+  0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0; }
+  25% { opacity: 0.5; }
+  50% { transform: translate(-30%, -30%) rotate(180deg); opacity: 0; }
+  100% { transform: translate(-50%, -50%) rotate(360deg); opacity: 0; }
+}
+
+@keyframes moveLight2 {
+  0% { transform: translate(100%, 100%); opacity: 0; }
+  50% { transform: translate(80%, 80%); opacity: 0.3; }
+  100% { transform: translate(100%, 100%); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+`
+
+interface NavigationModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+interface ProvisionItem {
+  name: string;
+  quantity: string;
+}
+
+interface ProvisionCategory {
+  category: string;
+  items: ProvisionItem[];
+}
+
+interface MealSuggestion {
+  type: string;
+  suggestion: string;
+}
+
+interface DayMealPlan {
+  day: string;
+  meals: MealSuggestion[];
+}
+
+interface DietaryPreference {
+  type: string;
+  count: number;
+}
+
+export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
+  const [activeSection, setActiveSection] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<"shopping" | "meals">("shopping")
+  const [isProvisionsFlipped, setIsProvisionsFlipped] = useState(true)
+  const [isProvisionsResultFlipped, setIsProvisionsResultFlipped] = useState(false)
+  const [isGeneratingProvisions, setIsGeneratingProvisions] = useState(false)
+  const [provisionsList, setProvisionsList] = useState<ProvisionCategory[]>([])
+  const [mealSuggestions, setMealSuggestions] = useState<DayMealPlan[]>([])
+  const [isCharterModalOpen, setIsCharterModalOpen] = useState(false)
+
+  // Form state
+  const [tripDuration, setTripDuration] = useState("")
+  const [totalPeople, setTotalPeople] = useState("")
+  const [dietaryPreferences, setDietaryPreferences] = useState<DietaryPreference[]>([
+    { type: "Vegan", count: 0 },
+    { type: "Pescatarian", count: 0 }
+  ])
+  const [mealPreferences, setMealPreferences] = useState([
+    "Breakfast",
+    "Lunch",
+    "Dinner"
+  ])
+  const [additionalNotes, setAdditionalNotes] = useState("")
+  const [kidsNotes, setKidsNotes] = useState("")
+  const [error, setError] = useState<string | null>(null)
+
+  // Add new state for chat
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Add new state for budget
+  const [totalBudget, setTotalBudget] = useState<number>(0);
+  const [budgetBreakdown, setBudgetBreakdown] = useState<{
+    category: string;
+    amount: number;
+  }[]>([]);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const navigationItems = [
+    {
+      name: "Provisions",
+      icon: <Grid className="w-6 h-6 text-emerald-400" />,
+      color: "bg-[#0D1117]/80 text-emerald-400 border-emerald-400/20",
+      hoverGradient: "from-emerald-400/5",
+      description: "Plan your yacht provisions",
+    },
+    {
+      name: "Yacht",
+      icon: (
+        <div className="w-6 h-6 rounded-full border-2 border-amber-400 flex items-center justify-center">
+          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+        </div>
+      ),
+      color: "bg-[#0D1117]/80 text-amber-400 border-amber-400/20",
+      hoverGradient: "from-amber-400/5",
+      description: "Explore available yachts",
+    },
+    {
+      name: "Charter",
+      icon: <Anchor className="w-6 h-6 text-teal-400" />,
+      color: "bg-[#0D1117]/80 text-teal-400 border-teal-400/20",
+      hoverGradient: "from-teal-400/5",
+      description: "Book your charter experience",
+    },
+    {
+      name: "Flotilla",
+      icon: <Users className="w-6 h-6 text-blue-400" />,
+      color: "bg-[#0D1117]/80 text-blue-400 border-blue-400/20",
+      hoverGradient: "from-blue-400/5",
+      description: "Join group sailing adventures",
+    },
+    {
+      name: "Cabins",
+      icon: <User className="w-6 h-6 text-purple-400" />,
+      color: "bg-[#0D1117]/80 text-purple-400 border-purple-400/20",
+      hoverGradient: "from-purple-400/5",
+      description: "Browse cabin accommodations",
+    },
+    {
+      name: "Learning",
+      icon: <ArrowUp className="w-6 h-6 text-emerald-400" />,
+      color: "bg-[#0D1117]/80 text-emerald-400 border-emerald-400/20",
+      hoverGradient: "from-emerald-400/5",
+      description: "Access yachting education resources",
+    },
+  ]
+
+  const flotillaEvents = [
+    {
+      id: "fl-001",
+      title: "Volatile Bodies",
+      date: "June 15-22, 2023",
+      location: "Greek Islands",
+      description:
+        "Join our flagship event exploring the stunning Greek Islands with a group of fellow sailing enthusiasts. Perfect for intermediate sailors.",
+      details: {
+        duration: "7 days / 6 nights",
+        departure: "Athens Marina",
+        arrival: "Mykonos",
+        price: "€1,950 per person",
+      },
+      spots: 4,
+      totalSpots: 12,
+      image: "/greek-islands-sailing-yacht.png",
+    },
+    {
+      id: "fl-002",
+      title: "Caribbean Winter Escape",
+      date: "December 10-17, 2023",
+      location: "British Virgin Islands",
+      description:
+        "Escape the winter cold and enjoy the crystal clear waters of the Caribbean. Suitable for all experience levels.",
+      spots: 6,
+      totalSpots: 10,
+      image: "/caribbean-sailing-yacht.png",
+    },
+    {
+      id: "fl-003",
+      title: "Croatian Coast Adventure",
+      date: "September 5-12, 2023",
+      location: "Dalmatian Coast",
+      description:
+        "Discover hidden coves and historic towns along Croatia's beautiful Dalmatian Coast. Intermediate level recommended.",
+      spots: 2,
+      totalSpots: 8,
+      image: "/croatia-sailing-yacht.png",
+    },
+  ]
+
+  const handleSectionClick = (name: string) => {
+    setActiveSection(name)
+    if (name === "Charter") {
+      setIsCharterModalOpen(true)
+    }
+  }
+
+  const handleBackClick = () => {
+    setActiveSection(null)
+  }
+
+  const handleDietaryPreferenceChange = (type: string, isChecked: boolean) => {
+    setDietaryPreferences(prev => 
+      prev.map(pref => 
+        pref.type === type 
+          ? { ...pref, count: isChecked ? 1 : 0 }
+          : pref
+      )
+    )
+  }
+
+  const handleDietaryPreferenceCount = (type: string, delta: number) => {
+    setDietaryPreferences(prev => 
+      prev.map(pref => 
+        pref.type === type 
+          ? { ...pref, count: Math.max(0, pref.count + delta) }
+          : pref
+      )
+    )
+  }
+
+  const handleMealPreferenceChange = (meal: string, isChecked: boolean) => {
+    setMealPreferences(prev => {
+      const newPreferences = isChecked 
+        ? [...prev, meal]
+        : prev.filter(m => m !== meal);
+      
+      // Ensure at least one meal type is selected
+      if (newPreferences.length === 0) {
+        setError("Please select at least one meal type");
+        return prev;
+      }
+      
+      setError(null);
+      return newPreferences;
+    });
+  };
+
+  const validateMealSuggestions = (suggestions: DayMealPlan[]): boolean => {
+    return suggestions.every(day => 
+      day.meals.every(meal => mealPreferences.includes(meal.type))
+    );
+  };
+
+  const handleGenerateProvisions = async () => {
+    try {
+      setError(null);
+      
+      // Validate form
+      if (!tripDuration) {
+        setError("Please select a trip duration");
+        return;
+      }
+      if (!totalPeople || isNaN(parseInt(totalPeople))) {
+        setError("Please enter a valid number of people");
+        return;
+      }
+      if (mealPreferences.length === 0) {
+        setError("Please select at least one meal type");
+        return;
+      }
+
+      // Flip to the provisions result card
+      setIsProvisionsFlipped(false);
+      setIsProvisionsResultFlipped(true);
+      setIsGeneratingProvisions(true);
+
+      // Filter out dietary preferences with count 0
+      const activeDietaryPreferences = dietaryPreferences.filter(pref => pref.count > 0);
+
+      // Call the API
+      const response = await fetch('/api/provisions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tripDuration,
+          totalPeople: parseInt(totalPeople),
+          dietaryPreferences: activeDietaryPreferences,
+          mealPreferences,
+          additionalNotes: additionalNotes || undefined,
+          kidsNotes: kidsNotes || undefined
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate provisions list');
+      }
+
+      const data = await response.json();
+      
+      // Validate that the response only includes selected meal types
+      if (!validateMealSuggestions(data.mealSuggestions)) {
+        throw new Error('Received meal suggestions for unselected meal types');
+      }
+
+      setProvisionsList(data.provisionsList);
+      setMealSuggestions(data.mealSuggestions);
+    } catch (err) {
+      console.error('Error generating provisions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate provisions list');
+      // Flip back to the form on error
+      setIsProvisionsFlipped(true);
+      setIsProvisionsResultFlipped(false);
+    } finally {
+      setIsGeneratingProvisions(false);
+    }
+  };
+
+  const handleEditProvisions = () => {
+    setIsProvisionsFlipped(true)
+    setIsProvisionsResultFlipped(false)
+  }
+
+  const handlePrintProvisions = () => {
+    window.print()
+  }
+
+  const handleDownloadProvisions = () => {
+    // Create a text representation of the provisions list
+    let provisionsText = "YAGA PROVISIONS LIST\n\n"
+
+    provisionsList.forEach((category) => {
+      provisionsText += `${category.category.toUpperCase()}\n`
+      category.items.forEach((item) => {
+        provisionsText += `- ${item.name}: ${item.quantity}\n`
+      })
+      provisionsText += "\n"
+    })
+
+    provisionsText += "MEAL SUGGESTIONS\n\n"
+    mealSuggestions.forEach((day) => {
+      provisionsText += `${day.day}\n`
+      day.meals.forEach((meal) => {
+        provisionsText += `- ${meal.type}: ${meal.suggestion}\n`
+      })
+      provisionsText += "\n"
+    })
+
+    // Create a blob and download link
+    const blob = new Blob([provisionsText], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "yaga-provisions-list.txt"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const getPreferenceCount = (type: string): number => {
+    return dietaryPreferences.find(p => p.type === type)?.count ?? 0;
+  };
+
+  // Add function to scroll chat to bottom
+  const scrollToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  // Add function to handle sending messages
+  const handleSendMessage = async () => {
+    if (!currentMessage.trim() || isSendingMessage) return;
+
+    try {
+      setIsSendingMessage(true);
+      
+      // Add user message to chat
+      const newMessage = { role: 'user' as const, content: currentMessage };
+      setChatMessages(prev => [...prev, newMessage]);
+      setCurrentMessage('');
+
+      // Call the API with the current context
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          context: {
+            tripDuration,
+            totalPeople,
+            dietaryPreferences: dietaryPreferences.filter(pref => pref.count > 0),
+            mealPreferences,
+            provisionsList,
+            mealSuggestions,
+          },
+          history: chatMessages
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      
+      // Add AI response to chat
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+      
+      // Scroll to bottom after new messages
+      setTimeout(scrollToBottom, 100);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
+  // Add function to handle regeneration
+  const handleRegenerateProvisions = async () => {
+    setIsRegenerating(true);
+    try {
+      await handleGenerateProvisions();
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  return (
+    <div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          >
+            <motion.div
+              className="w-full max-w-4xl mx-4 rounded-2xl bg-[#0A0E17]/90 border border-white/10 backdrop-blur-md overflow-hidden"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="backdrop-blur-2xl bg-[#0a0c19]/40 border border-white/15 rounded-2xl p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4),_inset_0_1px_2px_rgba(255,255,255,0.1)] relative overflow-hidden max-h-[85vh] flex flex-col before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/5 before:to-transparent before:pointer-events-none">
+                {/* Light reflection elements */}
+                <style jsx>{lightReflectionKeyframes}</style>
+                <div
+                  className="absolute -top-[150px] -left-[150px] w-[300px] h-[300px] rounded-full bg-gradient-radial from-white/10 to-transparent opacity-0 pointer-events-none"
+                  style={{ animation: "moveLight1 15s infinite ease-in-out" }}
+                ></div>
+                <div
+                  className="absolute -bottom-[100px] -right-[100px] w-[200px] h-[200px] rounded-full bg-gradient-radial from-white/5 to-transparent opacity-0 pointer-events-none"
+                  style={{ animation: "moveLight2 12s infinite ease-in-out" }}
+                ></div>
+                <div
+                  className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-30 pointer-events-none"
+                  style={{ animation: "shimmer 8s infinite linear" }}
+                ></div>
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-20 pointer-events-none"
+                  style={{ animation: "shimmer 8s infinite linear reverse" }}
+                ></div>
+
+                {/* Decorative elements */}
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-trend-yellow/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
+
+                <div className="relative z-10 overflow-y-auto custom-scrollbar flex-1">
+                  <AnimatePresence mode="wait">
+                    {activeSection === null ? (
+                      <motion.div
+                        key="navigation-grid"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="relative z-10"
+                      >
+                        <div className="mb-10 flex justify-center">
+                          <div className="absolute left-1/2 -translate-x-1/2 md:left-1/2 md:-translate-x-1/2">
+                            <h2 className="text-2xl font-medium text-white whitespace-nowrap">
+                              Navigate Your Yachting Experience
+                            </h2>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 relative z-10">
+                          {navigationItems.map((item, index) => (
+                            <motion.button
+                              key={item.name}
+                              className={`group flex flex-col items-center justify-center p-6 rounded-xl border border-white/10 ${item.color} hover:bg-opacity-100 transition-all relative overflow-hidden`}
+                              whileHover={{ scale: 1.05, y: -5 }}
+                              whileTap={{ scale: 0.98 }}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{
+                                opacity: 1,
+                                y: 0,
+                                transition: { delay: 0.1 + index * 0.05 },
+                              }}
+                              onClick={() => handleSectionClick(item.name)}
+                            >
+                              <div
+                                className={`absolute inset-0 bg-gradient-to-br ${item.hoverGradient} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                              ></div>
+
+                              {/* Icon and name that fade out on hover */}
+                              <div className="flex flex-col items-center justify-center transition-opacity duration-300 group-hover:opacity-0">
+                                <div className="mb-3 relative z-10">{item.icon}</div>
+                                <span className="text-sm font-medium relative z-10">{item.name}</span>
+                              </div>
+
+                              {/* Tooltip description that fades in on hover */}
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-sm rounded-xl">
+                                <span className="text-sm text-white/90 px-3 text-center">{item.description}</span>
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+
+                        <div className="relative z-10 mt-10 flex justify-center">
+                          <motion.button
+                            className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#0D1117]/80 border border-white/10 text-white/70 text-sm"
+                            onClick={onClose}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1, transition: { delay: 0.4 } }}
+                          >
+                            <ChevronLeft className="w-4 h-4 mr-1" />
+                            Back to Home
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="section-content"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="relative z-10"
+                      >
+                        {/* Section header */}
+                        <div className="flex justify-between items-center mb-6">
+                          <h2 className="text-2xl font-medium text-white flex items-center">
+                            {navigationItems.find((item) => item.name === activeSection)?.icon}
+                            <span className="ml-3">{activeSection}</span>
+                          </h2>
+                          <motion.button
+                            className="p-2 rounded-full bg-[#0D1117]/80 border border-white/10 text-white/70"
+                            onClick={handleBackClick}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <X className="w-4 h-4" />
+                          </motion.button>
+                        </div>
+
+                        {/* Section content */}
+                        {activeSection === "Provisions" && (
+                          <AnimatePresence mode="wait">
+                            {isProvisionsFlipped ? (
+                              <motion.div
+                                key="provisions-form"
+                                initial={{ opacity: 0, rotateY: -90 }}
+                                animate={{ opacity: 1, rotateY: 0 }}
+                                exit={{ opacity: 0, rotateY: 90 }}
+                                transition={{ duration: 0.4 }}
+                                className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar"
+                              >
+                                <h2 className="text-2xl font-semibold mb-6 text-white sticky top-0 bg-[#0a0c19]/95 backdrop-blur-md py-2 z-10">
+                                  Plan Your Provisions
+                                </h2>
+
+                                {/* Trip Information */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div>
+                                    <label className="block text-sm font-medium text-white/80 mb-2">
+                                      Trip Duration
+                                    </label>
+                                    <select 
+                                      className="w-full backdrop-blur-md bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                                      value={tripDuration}
+                                      onChange={(e) => setTripDuration(e.target.value)}
+                                    >
+                                      <option value="">Select duration</option>
+                                      <option value="1 week">1 week</option>
+                                      <option value="2 weeks">2 weeks</option>
+                                      <option value="3 weeks">3 weeks</option>
+                                      <option value="1 month">1 month</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-white/80 mb-2">
+                                      Number of People
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="w-full backdrop-blur-md bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                                      placeholder="Enter number of people"
+                                      value={totalPeople}
+                                      onChange={(e) => setTotalPeople(e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Dietary Preferences */}
+                                <div>
+                                  <h3 className="text-lg font-medium text-white/80 mb-4">Dietary Preferences</h3>
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="diet-vegetarian"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="diet-vegetarian" className="ml-2 text-white">
+                                            Vegetarian
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="diet-vegan"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                            checked={getPreferenceCount("Vegan") > 0}
+                                            onChange={(e) => handleDietaryPreferenceChange("Vegan", e.target.checked)}
+                                          />
+                                          <label htmlFor="diet-vegan" className="ml-2 text-white">
+                                            Vegan
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md"
+                                              onClick={() => handleDietaryPreferenceCount("Vegan", -1)}
+                                            >
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">
+                                              {getPreferenceCount("Vegan")}
+                                            </span>
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md"
+                                              onClick={() => handleDietaryPreferenceCount("Vegan", 1)}
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="diet-pescatarian"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                            checked={getPreferenceCount("Pescatarian") > 0}
+                                            onChange={(e) => handleDietaryPreferenceChange("Pescatarian", e.target.checked)}
+                                          />
+                                          <label htmlFor="diet-pescatarian" className="ml-2 text-white">
+                                            Pescatarian
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md"
+                                              onClick={() => handleDietaryPreferenceCount("Pescatarian", -1)}
+                                            >
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">
+                                              {getPreferenceCount("Pescatarian")}
+                                            </span>
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md"
+                                              onClick={() => handleDietaryPreferenceCount("Pescatarian", 1)}
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="diet-gluten-free"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="diet-gluten-free" className="ml-2 text-white">
+                                            Gluten-Free
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="diet-dairy-free"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="diet-dairy-free" className="ml-2 text-white">
+                                            Dairy-Free
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="diet-keto"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="diet-keto" className="ml-2 text-white">
+                                            Keto
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Allergies */}
+                                <div>
+                                  <h3 className="text-lg font-medium text-white/80 mb-4">Allergies</h3>
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="allergy-nuts"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="allergy-nuts" className="ml-2 text-white">
+                                            Nuts
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="allergy-shellfish"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="allergy-shellfish" className="ml-2 text-white">
+                                            Shellfish
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="allergy-eggs"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="allergy-eggs" className="ml-2 text-white">
+                                            Eggs
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="allergy-soy"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="allergy-soy" className="ml-2 text-white">
+                                            Soy
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2">
+                                        <div className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            id="allergy-lactose"
+                                            className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          />
+                                          <label htmlFor="allergy-lactose" className="ml-2 text-white">
+                                            Lactose
+                                          </label>
+                                        </div>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-white/60 mr-2">People:</span>
+                                          <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                              -
+                                            </button>
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
+                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Meal Preferences */}
+                                <div>
+                                  <h3 className="text-lg font-medium text-white/80 mb-4">Meal Preferences</h3>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                                    {["Breakfast", "Lunch", "Dinner", "Snacks", "Desserts"].map((meal) => (
+                                      <div
+                                        key={meal}
+                                        className="flex items-center backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-2"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          id={`meal-${meal}`}
+                                          className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                          checked={mealPreferences.includes(meal)}
+                                          onChange={(e) => handleMealPreferenceChange(meal, e.target.checked)}
+                                        />
+                                        <label htmlFor={`meal-${meal}`} className="ml-2 text-white">
+                                          {meal}
+                                        </label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Children Information */}
+                                <div>
+                                  <h3 className="text-lg font-medium text-white/80 mb-4">Children Information</h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                      <label className="block text-sm font-medium text-white/80 mb-2">
+                                        Number of Kids
+                                      </label>
+                                      <div className="flex items-center backdrop-blur-md bg-white/5 border border-white/20 rounded-md">
+                                        <button className="px-4 py-2 text-white/70 hover:bg-white/10 rounded-l-md">
+                                          -
+                                        </button>
+                                        <span className="flex-1 py-2 text-white text-center">0</span>
+                                        <button className="px-4 py-2 text-white/70 hover:bg-white/10 rounded-r-md">
+                                          +
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-medium text-white/80 mb-2">Age Range</label>
+                                      <select className="w-full backdrop-blur-md bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/30">
+                                        <option>Select age range</option>
+                                        <option>0-2 years</option>
+                                        <option>3-5 years</option>
+                                        <option>6-12 years</option>
+                                        <option>13-17 years</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div>
+                                    <label className="block text-sm font-medium text-white/80 mb-2">
+                                      Additional Notes
+                                    </label>
+                                    <textarea
+                                      className="w-full backdrop-blur-md bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/30 min-h-[100px]"
+                                      placeholder="Any specific preferences or requirements..."
+                                      value={additionalNotes}
+                                      onChange={(e) => setAdditionalNotes(e.target.value)}
+                                    ></textarea>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-white/80 mb-2">
+                                      Kids' Dietary Notes
+                                    </label>
+                                    <textarea
+                                      className="w-full backdrop-blur-md bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/30 min-h-[100px]"
+                                      placeholder="Any specific dietary needs for children..."
+                                      value={kidsNotes}
+                                      onChange={(e) => setKidsNotes(e.target.value)}
+                                    ></textarea>
+                                  </div>
+                                </div>
+
+                                {/* Budget Summary Box */}
+                                {provisionsList.length > 0 && (
+                                  <div className="mt-4 p-4 backdrop-blur-md bg-white/5 rounded-lg border border-white/10">
+                                    <h3 className="text-lg font-semibold mb-2 text-white">Estimated Budget</h3>
+                                    <div className="space-y-2">
+                                      {budgetBreakdown.map((category, index) => (
+                                        <div key={index} className="flex justify-between text-sm">
+                                          <span className="text-white/80">{category.category}</span>
+                                          <span className="text-white">${category.amount.toFixed(2)}</span>
+                                        </div>
+                                      ))}
+                                      <div className="border-t border-white/10 mt-2 pt-2 flex justify-between font-semibold">
+                                        <span className="text-white">Total Estimated Cost</span>
+                                        <span className="text-white">${totalBudget.toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="mt-4 flex gap-4">
+                                  <button
+                                    onClick={handleGenerateProvisions}
+                                    disabled={isGeneratingProvisions}
+                                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                                  >
+                                    {isGeneratingProvisions ? 'Generating...' : 'Generate Provisions'}
+                                  </button>
+                                  
+                                  {provisionsList.length > 0 && (
+                                    <button
+                                      onClick={handleRegenerateProvisions}
+                                      disabled={isRegenerating}
+                                      className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                                    >
+                                      {isRegenerating ? 'Regenerating...' : 'Generate New Plan'}
+                                    </button>
+                                  )}
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="provisions-result"
+                                initial={{ opacity: 0, rotateY: 90 }}
+                                animate={{ opacity: 1, rotateY: 0 }}
+                                exit={{ opacity: 0, rotateY: -90 }}
+                                transition={{ duration: 0.4 }}
+                                className="space-y-6"
+                              >
+                                {isGeneratingProvisions ? (
+                                  <div className="flex flex-col items-center justify-center py-20">
+                                    <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mb-4" />
+                                    <h3 className="text-xl font-medium text-white">Generating Your Provisions List</h3>
+                                    <p className="text-white/60 mt-2">
+                                      We're creating a personalized list based on your preferences...
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex justify-between items-center sticky top-0 bg-[#0a0c19]/95 backdrop-blur-md py-2 z-10">
+                                      <h2 className="text-2xl font-semibold">Your Provisions List</h2>
+                                      <div className="flex space-x-2">
+                                        <motion.button
+                                          className="p-2 rounded-full backdrop-blur-md bg-white/5 border border-white/20 text-white/70 hover:bg-white/10 transition-colors"
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={handleEditProvisions}
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </motion.button>
+                                        <motion.button
+                                          className="p-2 rounded-full backdrop-blur-md bg-white/5 border border-white/20 text-white/70 hover:bg-white/10 transition-colors"
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={handlePrintProvisions}
+                                        >
+                                          <Printer className="w-4 h-4" />
+                                        </motion.button>
+                                        <motion.button
+                                          className="p-2 rounded-full backdrop-blur-md bg-white/5 border border-white/20 text-white/70 hover:bg-white/10 transition-colors"
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          onClick={handleDownloadProvisions}
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </motion.button>
+                                      </div>
+                                    </div>
+
+                                    {/* Add state for toggle view */}
+
+                                    <div className="space-y-6">
+                                      {/* Toggle buttons */}
+                                      <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-full p-1 flex mx-auto w-fit">
+                                        <button
+                                          className={`px-4 py-2 rounded-full transition-colors ${
+                                            activeView === "shopping"
+                                              ? "bg-emerald-500/30 text-white"
+                                              : "text-white/60 hover:text-white/80"
+                                          }`}
+                                          onClick={() => setActiveView("shopping")}
+                                        >
+                                          Items to Purchase
+                                        </button>
+                                        <button
+                                          className={`px-4 py-2 rounded-full transition-colors ${
+                                            activeView === "meals"
+                                              ? "bg-emerald-500/30 text-white"
+                                              : "text-white/60 hover:text-white/80"
+                                          }`}
+                                          onClick={() => setActiveView("meals")}
+                                        >
+                                          Weekly Meal Plan
+                                        </button>
+                                      </div>
+
+                                      {/* Content based on active view */}
+                                      <AnimatePresence mode="wait">
+                                        {activeView === "shopping" ? (
+                                          <motion.div
+                                            key="shopping-list"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="space-y-4"
+                                          >
+                                            <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-4">
+                                              <div className="flex justify-between items-center mb-3">
+                                                <h4 className="font-medium text-emerald-400">Items to Purchase</h4>
+                                                <button className="text-xs text-white/60 hover:text-white/80 transition-colors">
+                                                  Check All
+                                                </button>
+                                              </div>
+                                              <div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                  {provisionsList.map((category, index) => (
+                                                    <div
+                                                      key={index}
+                                                      className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-3"
+                                                    >
+                                                      <h5 className="font-medium text-white/90 mb-2 border-b border-white/10 pb-1">
+                                                        {category.category}
+                                                      </h5>
+                                                      <ul className="space-y-1">
+                                                        {category.items.map((item: ProvisionItem, itemIndex: number) => (
+                                                          <li
+                                                            key={itemIndex}
+                                                            className="text-white/70 text-sm flex justify-between"
+                                                          >
+                                                            <span>{item.name}</span>
+                                                            <span className="text-white/50">{item.quantity}</span>
+                                                          </li>
+                                                        ))}
+                                                      </ul>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </motion.div>
+                                        ) : (
+                                          <motion.div
+                                            key="meal-plan"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="space-y-4"
+                                          >
+                                            <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-4">
+                                              <div className="flex justify-between items-center mb-3">
+                                                <h4 className="font-medium text-emerald-400">Weekly Meal Plan</h4>
+                                              </div>
+                                              <div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                  {mealSuggestions.map((day, index) => (
+                                                    <div
+                                                      key={index}
+                                                      className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-3"
+                                                    >
+                                                      <h5 className="font-medium text-white/90 mb-2 border-b border-white/10 pb-1">
+                                                        {day.day}
+                                                      </h5>
+                                                      <ul className="space-y-2">
+                                                        {day.meals.map((meal: MealSuggestion, mealIndex: number) => (
+                                                          <li key={mealIndex} className="text-white/70 text-sm">
+                                                            <span className="font-medium text-white/90">{meal.type}:</span>{" "}
+                                                            {meal.suggestion}
+                                                          </li>
+                                                        ))}
+                                                      </ul>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+
+                                    {/* Chat Interface */}
+                                    <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-4">
+                                      <div className="flex justify-between items-center mb-3">
+                                        <h4 className="font-medium text-emerald-400">Chat with AI Assistant</h4>
+                                      </div>
+                                      
+                                      {/* Chat Messages */}
+                                      <div 
+                                        ref={chatContainerRef}
+                                        className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar mb-4"
+                                      >
+                                        {chatMessages.map((message, index) => (
+                                          <div
+                                            key={index}
+                                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                          >
+                                            <div
+                                              className={`max-w-[80%] rounded-lg p-3 ${
+                                                message.role === 'user'
+                                                  ? 'bg-emerald-500/20 text-white ml-auto'
+                                                  : 'bg-white/10 text-white/90'
+                                              }`}
+                                            >
+                                              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                            </div>
+                                          </div>
+                                        ))}
+                                        {isSendingMessage && (
+                                          <div className="flex justify-start">
+                                            <div className="bg-white/10 rounded-lg p-3">
+                                              <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Message Input */}
+                                      <div className="flex items-center space-x-2">
+                                        <input
+                                          type="text"
+                                          value={currentMessage}
+                                          onChange={(e) => setCurrentMessage(e.target.value)}
+                                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                          placeholder="Ask about recipes, adjustments, or details..."
+                                          className="flex-1 bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                        />
+                                        <button
+                                          onClick={handleSendMessage}
+                                          disabled={isSendingMessage || !currentMessage.trim()}
+                                          className="px-4 py-2 rounded-md bg-emerald-500/80 text-white hover:bg-emerald-500/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                        >
+                                          {isSendingMessage ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                          ) : (
+                                            <span>Send</span>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex justify-between pt-4 sticky bottom-0 bg-[#0a0c19]/95 backdrop-blur-md py-3 z-10">
+                                      <button
+                                        onClick={handleEditProvisions}
+                                        className="px-6 py-2 rounded-md backdrop-blur-md bg-white/5 border border-white/20 text-white/70 hover:bg-white/10 transition-colors flex items-center"
+                                      >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Edit Preferences
+                                      </button>
+                                      <button
+                                        onClick={handleDownloadProvisions}
+                                        className="px-6 py-2 rounded-md bg-emerald-500/80 backdrop-blur-sm text-white hover:bg-emerald-500/90 transition-colors flex items-center"
+                                      >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Download List
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        )}
+
+                        {activeSection !== "Provisions" &&
+                          activeSection !== "Flotilla" &&
+                          activeSection !== "Charter" && (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <div className="text-white/70 text-center">
+                                <div className="mb-4">
+                                  {navigationItems.find((item) => item.name === activeSection)?.icon}
+                                </div>
+                                <p className="mb-2">The {activeSection} section is coming soon.</p>
+                                <p>We're working hard to bring you this feature!</p>
+                              </div>
+                              <motion.button
+                                className="mt-8 px-4 py-2 rounded-full bg-[#0D1117]/80 border border-white/10 text-white/70 flex items-center"
+                                onClick={handleBackClick}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <ChevronLeft className="w-4 h-4 mr-1" />
+                                Back to Navigation
+                              </motion.button>
+                            </div>
+                          )}
+
+                        {activeSection === "Flotilla" && (
+                          <div className="space-y-6">
+                            <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-xl font-medium text-blue-400">Upcoming Flotilla Events</h3>
+                              <span className="text-sm text-white/60">3 events available</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {flotillaEvents.map((event, index) => (
+                                <motion.div
+                                  key={event.id}
+                                  className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+                                  whileHover={{ y: -5, scale: 1.02 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <div className="relative h-48 overflow-hidden">
+                                    <img
+                                      src={event.image || "/placeholder.svg"}
+                                      alt={event.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                                      <h4 className="text-lg font-medium text-white">{event.title}</h4>
+                                      <p className="text-sm text-white/80">{event.location}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-sm text-blue-300">{event.date}</span>
+                                      <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full">
+                                        {event.spots} spots left
+                                      </span>
+                                    </div>
+
+                                    <p className="text-sm text-white/70">{event.description}</p>
+
+                                    <div className="pt-2">
+                                      <div className="w-full bg-white/10 rounded-full h-1.5 mb-1">
+                                        <div
+                                          className="bg-blue-400 h-1.5 rounded-full"
+                                          style={{
+                                            width: `${((event.totalSpots - event.spots) / event.totalSpots) * 100}%`,
+                                          }}
+                                        ></div>
+                                      </div>
+                                      <div className="flex justify-between text-xs text-white/60">
+                                        <span>{event.totalSpots - event.spots} booked</span>
+                                        <span>{event.totalSpots} total</span>
+                                      </div>
+                                    </div>
+
+                                    <button className="w-full mt-3 py-2 rounded-md bg-blue-500/80 text-white hover:bg-blue-500/90 transition-colors">
+                                      View Details
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+
+                            <div className="flex justify-center mt-6">
+                              <motion.button
+                                className="px-4 py-2 rounded-full bg-[#0D1117]/80 border border-white/10 text-white/70 flex items-center"
+                                onClick={handleBackClick}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <ChevronLeft className="w-4 h-4 mr-1" />
+                                Back to Navigation
+                              </motion.button>
+                            </div>
+                          </div>
+                        )}
+
+                        {activeSection === "Charter" && (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <div className="text-white/70 text-center max-w-lg">
+                              <div className="mb-4">
+                                <Anchor className="w-12 h-12 text-teal-400 mx-auto" />
+                              </div>
+                              <h3 className="text-xl font-medium text-white mb-2">Private Charter Experience</h3>
+                              <p className="mb-4">
+                                Create your perfect yachting adventure with our step-by-step booking process. Choose
+                                your yacht, plan your itinerary, select your crew, and more.
+                              </p>
+                              <motion.button
+                                className="px-6 py-3 rounded-md bg-gradient-to-r from-teal-500 to-teal-400 text-white hover:opacity-90 transition-opacity inline-flex items-center"
+                                onClick={() => setIsCharterModalOpen(true)}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                Start Booking Process
+                              </motion.button>
+                            </div>
+                            <motion.button
+                              className="mt-8 px-4 py-2 rounded-full bg-[#0D1117]/80 border border-white/10 text-white/70 flex items-center"
+                              onClick={handleBackClick}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-1" />
+                              Back to Navigation
+                            </motion.button>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          )}
+              </AnimatePresence>
+
+      {/* Charter Booking Modal */}
+      <CharterBookingModal isOpen={isCharterModalOpen} onClose={() => setIsCharterModalOpen(false)} />
+
+      {error && (
+        <div className="text-red-400 text-sm mt-2">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
