@@ -5,6 +5,7 @@ import { ChevronLeft, Grid, Anchor, Users, User, ArrowUp, X, Loader2, Download, 
 import { useState } from "react"
 import { CharterBookingModal } from "./charter-booking-modal"
 import { ProvisionsChat } from "./provisions-chat"
+import { useRouter } from 'next/navigation'  // Update this import
 
 // Add keyframe animations for light reflections
 const lightReflectionKeyframes = `
@@ -275,6 +276,7 @@ const BudgetBreakdown: React.FC<{
 };
 
 export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
+  const router = useRouter()  // Add this line
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<"shopping" | "meals">("shopping")
   const [isProvisionsFlipped, setIsProvisionsFlipped] = useState(true)

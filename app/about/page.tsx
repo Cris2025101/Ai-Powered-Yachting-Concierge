@@ -22,7 +22,7 @@ export default function AboutPage() {
         <AboutCommunity />
         <AboutLoyalty />
         <AboutImpact />
-        <AboutFuture />
+        <AboutFutu />
       </div>
     </div>
   )
