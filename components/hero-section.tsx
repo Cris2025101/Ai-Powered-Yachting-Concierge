@@ -94,21 +94,30 @@ export function HeroSection() {
         {/* Navigator button - now opens the navigation modal */}
         <div className="flex justify-center w-full mt-8 mb-2">
           <motion.button
-            className="inline-flex items-center justify-center rounded-full bg-background/50 px-6 py-2.5 text-foreground hover:bg-background/70 border border-white/10 text-sm md:text-base"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className="flex items-center px-6 py-2 rounded-full border border-white/30 bg-[#0D1117]/80 text-white font-medium text-lg transition-all relative"
+            whileHover={{
+              scale: 1.08,
+              y: -10,
+              boxShadow: "0 8px 32px 0 rgba(255,255,255,0.25), 0 0 0 4px rgba(255,255,255,0.12)"
+            }}
+            whileTap={{ scale: 0.97 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 0.5 }}
+            transition={{ type: "tween", ease: "easeOut", duration: 0.18 }}
             onClick={() => setIsNavigationOpen(true)}
+            style={{
+              boxShadow: "0 0 16px 2px rgba(255,255,255,0.18)",
+            }}
           >
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            >
-              <CircleIcon className="mr-2 h-4 w-4 md:h-5 md:w-5 text-primary" />
-            </motion.div>
-            Navigator
+            {/* Animated Amber Circle with Bright White Lighthouse Glow */}
+            <span className="relative flex items-center justify-center mr-3">
+              <span className="w-6 h-6 rounded-full border-2 border-amber-400 flex items-center justify-center relative">
+                <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+                {/* Bright white lighthouse glow effect */}
+                <span className="absolute inset-0 rounded-full bg-white opacity-70 blur-[8px] animate-pulse"></span>
+              </span>
+            </span>
+            <span className="relative z-10 text-sm md:text-base font-medium">Navigator</span>
           </motion.button>
         </div>
       </div>

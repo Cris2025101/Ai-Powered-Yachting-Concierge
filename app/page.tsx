@@ -58,45 +58,7 @@ export default function Home() {
 
         <WhyChooseSection />
 
-        {/* Footer area with glass effect */}
-        <motion.div
-          className="mt-16 py-12 relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1 }}
-        >
-          <div className="absolute inset-0 backdrop-blur-md bg-white/5 border-t border-white/10 z-0"></div>
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="text-center md:text-left">
-                <h3 className="text-xl font-semibold mb-2">Exclusive Loyalty Member Club</h3>
-                <p className="text-white/70">Only 250 spots available - join the elite</p>
 
-                {/* Progress bar */}
-                <div className="mt-4 w-full max-w-md">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-white/80">72 members</span>
-                    <span className="text-white/80">250 spots</span>
-                  </div>
-                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-trend-yellow to-trend-yellow/70 rounded-full"
-                      style={{ width: "28.8%" }} // 72/250 = 28.8%
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              <motion.button
-                className="px-6 py-3 rounded-full bg-trend-yellow/20 backdrop-blur-sm border border-trend-yellow/30 text-white font-medium"
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 215, 0, 0.3)" }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Join Now
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </motion.div>
   )

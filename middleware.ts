@@ -52,9 +52,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is signed in and trying to access /auth,
-  // redirect the user to /dashboard
+  // redirect the user to /profile
   if (session && pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/profile', request.url))
   }
 
   return response

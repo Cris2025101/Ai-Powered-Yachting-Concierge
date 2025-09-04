@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ClientWrapper } from "@/components/client-wrapper"
+import { SiteFooter } from "@/components/site-footer"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -24,6 +25,7 @@ export default function RootLayout({
           <ClientWrapper>
             <main className="pt-0">{children}</main>
           </ClientWrapper>
+          <SiteFooter />
         </ThemeProvider>
       </body>
     </html>

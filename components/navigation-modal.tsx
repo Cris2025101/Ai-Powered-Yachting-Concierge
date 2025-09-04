@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, Grid, Anchor, Users, User, ArrowUp, X, Loader2, Download, Printer, Edit, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { CharterBookingModal } from "./charter-booking-modal"
+import { PanPanModal } from "./panpan-modal"
 import { ProvisionsChat } from "./provisions-chat"
+import { useRouter } from "next/navigation"
+import { LearningModule } from "./learning-module"
 
 // Add keyframe animations for light reflections
 const lightReflectionKeyframes = `
@@ -30,6 +33,26 @@ const lightReflectionKeyframes = `
 interface NavigationModalProps {
   isOpen: boolean
   onClose: () => void
+}
+
+interface EventDetails {
+  duration: string;
+  departure: string;
+  arrival?: string;
+  cruising?: string;
+  price: string;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  image: string;
+  description: string;
+  spots: number;
+  totalSpots: number;
+  details: EventDetails;
 }
 
 interface ProvisionItem {
@@ -275,6 +298,7 @@ const BudgetBreakdown: React.FC<{
 };
 
 export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
+  const router = useRouter()
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<"shopping" | "meals">("shopping")
   const [isProvisionsFlipped, setIsProvisionsFlipped] = useState(true)
@@ -283,14 +307,18 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
   const [provisionsList, setProvisionsList] = useState<ProvisionCategory[]>([])
   const [mealSuggestions, setMealSuggestions] = useState<DayMealPlan[]>([])
   const [isCharterModalOpen, setIsCharterModalOpen] = useState(false)
+  const [isPanPanModalOpen, setIsPanPanModalOpen] = useState(false)
 
   // Form state
   const [tripDuration, setTripDuration] = useState("")
   const [totalPeople, setTotalPeople] = useState("")
   const [dietaryPreferences, setDietaryPreferences] = useState<DietaryPreference[]>([
+    { type: "Vegetarian", count: 0 },
     { type: "Vegan", count: 0 },
     { type: "Pescatarian", count: 0 },
-    { type: "Gluten-Free", count: 0 }
+    { type: "Gluten-Free", count: 0 },
+    { type: "Dairy-Free", count: 0 },
+    { type: "Keto", count: 0 }
   ])
   const [mealPreferences, setMealPreferences] = useState<MealPreference[]>([
     { type: "Breakfast", count: 0 },
@@ -363,18 +391,18 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
       description: "Book your charter experience",
     },
     {
-      name: "Flotilla",
-      icon: <Users className="w-6 h-6 text-blue-400" />,
-      color: "bg-[#0D1117]/80 text-blue-400 border-blue-400/20",
-      hoverGradient: "from-blue-400/5",
+      name: "Cabin",
+      icon: <Users className="w-6 h-6 text-purple-400" />,
+      color: "bg-[#0D1117]/80 text-purple-400 border-purple-400/20",
+      hoverGradient: "from-purple-400/5",
       description: "Join group sailing adventures",
     },
     {
-      name: "Cabins",
-      icon: <User className="w-6 h-6 text-purple-400" />,
-      color: "bg-[#0D1117]/80 text-purple-400 border-purple-400/20",
-      hoverGradient: "from-purple-400/5",
-      description: "Browse cabin accommodations",
+      name: "PanPan 16CH",
+      icon: <Users className="w-6 h-6 text-red-400" />,
+      color: "bg-[#0D1117]/80 text-red-400 border-red-400/20",
+      hoverGradient: "from-red-400/5",
+      description: "Emergency support - Live WhatsApp chat with professional skippers",
     },
     {
       name: "Learning",
@@ -388,49 +416,197 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
   const flotillaEvents = [
     {
       id: "fl-001",
-      title: "Volatile Bodies",
-      date: "June 15-22, 2023",
-      location: "Greek Islands",
-      description:
-        "Join our flagship event exploring the stunning Greek Islands with a group of fellow sailing enthusiasts. Perfect for intermediate sailors.",
+      title: "YAGA",
+      date: "27 Sept, 2025",
+      location: "Greece",
+      image: "/greek-islands-sailing-yacht.png",
+      description: "An invitation to let go.",
+      spots: 4,
+      totalSpots: 12,
       details: {
         duration: "7 days / 6 nights",
         departure: "Athens Marina",
-        arrival: "Mykonos",
-        price: "€1,950 per person",
+        cruising: "Saronic Islands",
+        price: "€1,550 per person",
       },
-      spots: 4,
-      totalSpots: 12,
-      image: "/greek-islands-sailing-yacht.png",
     },
     {
       id: "fl-002",
-      title: "Caribbean Winter Escape",
-      date: "December 10-17, 2023",
-      location: "British Virgin Islands",
-      description:
-        "Escape the winter cold and enjoy the crystal clear waters of the Caribbean. Suitable for all experience levels.",
+      title: "YAGA",
+      date: "03 Oct, 2025",
+      location: "Italy",
+      image: "/greek-islands-sailing-yacht.png",
+      description: "Discovering Sicily around the Volcanos.",
       spots: 6,
       totalSpots: 10,
-      image: "/caribbean-sailing-yacht.png",
+      details: {
+        duration: "7 days / 6 nights",
+        departure: "Sicily",
+        cruising: "Aeolian",
+        price: "€1,650 per person",
+      },
     },
     {
       id: "fl-003",
-      title: "Croatian Coast Adventure",
-      date: "September 5-12, 2023",
-      location: "Dalmatian Coast",
-      description:
-        "Discover hidden coves and historic towns along Croatia's beautiful Dalmatian Coast. Intermediate level recommended.",
+      title: "YAGA",
+      date: "10 Jan, 2026",
+      location: "British Virgin Islands",
+      image: "/greek-islands-sailing-yacht.png",
+      description: "Escape the winter cold and enjoy the crystal clear waters of the Caribbean.",
       spots: 2,
       totalSpots: 8,
-      image: "/croatia-sailing-yacht.png",
+      details: {
+        duration: "10 days / 9 nights",
+        departure: "Tortola",
+        arrival: "Tortola",
+        price: "€2,250 per person",
+      },
+    },
+    {
+      id: "fl-004",
+      title: "YAGA",
+      date: "14 Mar, 2026",
+      location: "Seychelles",
+      image: "/greek-islands-sailing-yacht.png",
+      description: "Experience the paradise islands of the Seychelles with crystal clear waters and pristine beaches.",
+      spots: 3,
+      totalSpots: 8,
+      details: {
+        duration: "8 days / 7 nights",
+        departure: "Mahé",
+        arrival: "Praslin",
+        price: "€2,450 per person",
+      },
+    },
+    {
+      id: "fl-005",
+      title: "YAGA",
+      date: "1 Jun, 2026",
+      location: "Greece",
+      image: "/greek-islands-sailing-yacht.png",
+      description: "Experience the magic of the Cyclades islands during the perfect sailing season.",
+      spots: 5,
+      totalSpots: 10,
+      details: {
+        duration: "7 days / 6 nights",
+        departure: "Lavrion",
+        cruising: "Cyclades",
+        price: "€1,650 per person",
+      },
+    },
+    {
+      id: "fl-006",
+      title: "YAGA",
+      date: "26 Sept, 2026",
+      location: "Croatia",
+      image: "/greek-islands-sailing-yacht.png",
+      description: "A special autumn sailing experience along the Croatian coast with fewer crowds.",
+      spots: 4,
+      totalSpots: 8,
+      details: {
+        duration: "7 days / 6 nights",
+        departure: "Split",
+        cruising: "Dalmatian Coast",
+        price: "€1,750 per person",
+      },
     },
   ]
 
-  const handleSectionClick = (name: string) => {
-    setActiveSection(name)
-    if (name === "Charter") {
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+
+  const handleEventClick = (event: any) => {
+    setSelectedEvent(event);
+  };
+
+  const handleCloseEventDetails = () => {
+    setSelectedEvent(null);
+  };
+
+  // Event Details Modal
+  const EventDetailsModal = ({ event, onClose }: { event: any; onClose: () => void }) => (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="w-full max-w-md mx-4 bg-white rounded-lg overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-[#1a237e] mb-2">{event.title} {event.location}</h2>
+          <div className="text-gray-600 mb-4">
+            <div className="text-lg">{event.date}</div>
+            <div className="text-sm mt-1">{event.location}</div>
+          </div>
+          
+          <p className="text-gray-800 mb-6">{event.description}</p>
+          
+          {event.details && (
+            <div className="space-y-3 mb-6 border-t border-gray-200 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(event.details).map(([key, value]) => (
+                  <div key={key} className="text-sm">
+                    <span className="text-gray-600 block capitalize">{key.replace('_', ' ')}</span>
+                    <span className="text-gray-900 font-medium">{value as string}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-gray-600 block text-sm">Available spots</span>
+                <span className="text-gray-900 font-medium">{event.spots} of {event.totalSpots}</span>
+              </div>
+              {event.details?.price && (
+                <div className="text-right">
+                  <span className="text-gray-600 block text-sm">Price per person</span>
+                  <span className="text-gray-900 font-medium">{event.details.price}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              className="w-full py-3 bg-[#dd2c00] text-white font-medium rounded hover:bg-[#bf360c] transition-colors"
+              onClick={() => {/* Add booking logic */}}
+            >
+              Presave the ticket
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  const handleSectionClick = (sectionName: string) => {
+    if (sectionName === "Yacht") {
+      router.push("/yacht-results")
+      onClose()
+    } else if (sectionName === "Charter") {
       setIsCharterModalOpen(true)
+    } else if (sectionName === "PanPan 16CH") {
+      setIsPanPanModalOpen(true)
+    } else {
+      setActiveSection(sectionName)
     }
   }
 
@@ -532,7 +708,17 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
         return;
       }
 
-    // Flip to the provisions result card
+      console.log('Starting provision generation with:', {
+        tripDuration,
+        totalPeople,
+        activeMeals,
+        budget,
+        dietaryPreferences,
+        mealPreferences,
+        allergyPreferences
+      });
+
+      // Flip to the provisions result card
       setIsProvisionsFlipped(false);
       setIsProvisionsResultFlipped(true);
       setIsGeneratingProvisions(true);
@@ -541,6 +727,12 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
       const activeDietaryPreferences = dietaryPreferences.filter(pref => pref.count > 0);
       const activeMealPreferences = mealPreferences.filter(pref => pref.count > 0);
       const activeAllergies = allergyPreferences.filter(pref => pref.count > 0);
+
+      console.log('Active preferences:', {
+        dietary: activeDietaryPreferences,
+        meals: activeMealPreferences,
+        allergies: activeAllergies
+      });
 
       // Format allergy notes
       const allergyNotes = activeAllergies.length > 0 
@@ -557,6 +749,18 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
       const totalKids = childAgeGroups.reduce((sum, g) => sum + g.count, 0);
       const adults = parseInt(totalPeople) - totalKids;
 
+      console.log('Making API request with:', {
+        tripDuration,
+        totalPeople: parseInt(totalPeople),
+        adults,
+        children: childAgeGroups.filter(g => g.count > 0),
+        dietaryPreferences: activeDietaryPreferences,
+        mealPreferences: activeMealPreferences,
+        budget,
+        additionalNotes: combinedNotes,
+        kidsNotes
+      });
+
       // Call the API
       const response = await fetch('/api/provisions', {
         method: 'POST',
@@ -571,7 +775,7 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
           dietaryPreferences: activeDietaryPreferences,
           mealPreferences: activeMealPreferences,
           budget,
-          additionalNotes: combinedNotes || undefined, // for adults
+          additionalNotes: combinedNotes || undefined,
           kidsNotes: kidsNotes || undefined
         }),
       });
@@ -620,7 +824,8 @@ Would you like to:
       const data = await response.json();
       console.log('API success response:', {
         categoriesCount: data.provisionsList?.length,
-        mealsCount: data.mealSuggestions?.length
+        mealsCount: data.mealSuggestions?.length,
+        data
       });
       
       // Validate that the response only includes selected meal types
@@ -892,6 +1097,17 @@ The menu now includes premium ingredients and luxury items while maintaining all
     return allergyPreferences.find((pref: AllergyPreference) => pref.type === type)?.count ?? 0;
   };
 
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+
+  const toggleEventDetails = (eventId: string) => {
+    setExpandedEventId(expandedEventId === eventId ? null : eventId);
+  };
+
+  // Add fallback image handler
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = '/default-yacht.png';
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -1083,6 +1299,8 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                             type="checkbox"
                                             id="diet-vegetarian"
                                             className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                            checked={getPreferenceCount("Vegetarian") > 0}
+                                            onChange={(e) => handleDietaryPreferenceChange("Vegetarian", e.target.checked)}
                                           />
                                           <label htmlFor="diet-vegetarian" className="ml-2 text-white">
                                             Vegetarian
@@ -1091,11 +1309,19 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                         <div className="flex items-center">
                                           <span className="text-xs text-white/60 mr-2">People:</span>
                                           <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
-                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md"
+                                              onClick={() => handleDietaryPreferenceCount("Vegetarian", -1)}
+                                            >
                                               -
                                             </button>
-                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
-                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">
+                                              {getPreferenceCount("Vegetarian")}
+                                            </span>
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md"
+                                              onClick={() => handleDietaryPreferenceCount("Vegetarian", 1)}
+                                            >
                                               +
                                             </button>
                                           </div>
@@ -1213,6 +1439,8 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                             type="checkbox"
                                             id="diet-dairy-free"
                                             className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                            checked={getPreferenceCount("Dairy-Free") > 0}
+                                            onChange={(e) => handleDietaryPreferenceChange("Dairy-Free", e.target.checked)}
                                           />
                                           <label htmlFor="diet-dairy-free" className="ml-2 text-white">
                                             Dairy-Free
@@ -1221,11 +1449,19 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                         <div className="flex items-center">
                                           <span className="text-xs text-white/60 mr-2">People:</span>
                                           <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
-                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md"
+                                              onClick={() => handleDietaryPreferenceCount("Dairy-Free", -1)}
+                                            >
                                               -
                                             </button>
-                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
-                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">
+                                              {getPreferenceCount("Dairy-Free")}
+                                            </span>
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md"
+                                              onClick={() => handleDietaryPreferenceCount("Dairy-Free", 1)}
+                                            >
                                               +
                                             </button>
                                           </div>
@@ -1238,6 +1474,8 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                             type="checkbox"
                                             id="diet-keto"
                                             className="w-4 h-4 rounded border-white/20 text-green-400 focus:ring-green-400 bg-white/10"
+                                            checked={getPreferenceCount("Keto") > 0}
+                                            onChange={(e) => handleDietaryPreferenceChange("Keto", e.target.checked)}
                                           />
                                           <label htmlFor="diet-keto" className="ml-2 text-white">
                                             Keto
@@ -1246,11 +1484,19 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                         <div className="flex items-center">
                                           <span className="text-xs text-white/60 mr-2">People:</span>
                                           <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-md">
-                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md">
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-l-md"
+                                              onClick={() => handleDietaryPreferenceCount("Keto", -1)}
+                                            >
                                               -
                                             </button>
-                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">0</span>
-                                            <button className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md">
+                                            <span className="px-2 py-1 text-white min-w-[20px] text-center">
+                                              {getPreferenceCount("Keto")}
+                                            </span>
+                                            <button 
+                                              className="px-2 py-1 text-white/70 hover:bg-white/10 rounded-r-md"
+                                              onClick={() => handleDietaryPreferenceCount("Keto", 1)}
+                                            >
                                               +
                                             </button>
                                           </div>
@@ -1770,6 +2016,128 @@ The menu now includes premium ingredients and luxury items while maintaining all
                             )}
                           </AnimatePresence>
                         )}
+                        {activeSection === "Cabin" && (
+                          <div className="space-y-6">
+                            <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-2xl font-medium text-white">Upcoming Festivals</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {flotillaEvents.map((event) => (
+                                <motion.div
+                                  key={event.id}
+                                  className="backdrop-blur-md bg-[#181c27] border border-white/10 rounded-xl overflow-hidden flex flex-col shadow-lg transition-transform duration-200 hover:scale-105 hover:shadow-2xl"
+                                  whileHover={{ scale: 1.04 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <img
+                                    src={event.image || '/default-yacht.png'}
+                                    alt={event.title}
+                                    className="w-full h-40 object-cover object-center bg-[#222]"
+                                    onError={handleImageError}
+                                  />
+                                  <div className="p-4 flex-1 flex flex-col justify-between">
+                                    <div>
+                                      <h4 className="text-xl font-semibold text-white mb-1 text-center">{event.title}</h4>
+                                      <div className="flex items-center justify-center text-sm text-white/70 mb-2 gap-2">
+                                        <span>{event.date}</span>
+                                        <span className="mx-1">|</span>
+                                        <span>{event.location}</span>
+                                      </div>
+                                      <p className="text-white/80 mb-2 text-center truncate-2-lines" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{event.description}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-4">
+                                      <button
+                                        onClick={() => toggleEventDetails(event.id)}
+                                        className="text-yellow-400 hover:underline text-sm font-medium"
+                                      >
+                                        {expandedEventId === event.id ? "Show less" : "More info"}
+                                      </button>
+                                      <button
+                                        onClick={() => handleEventClick(event)}
+                                        className="px-4 py-2 rounded-md bg-[#dd2c00] text-white font-semibold hover:bg-[#bf360c] transition-colors"
+                                      >
+                                        Prebooking
+                                      </button>
+                                    </div>
+                                    <AnimatePresence>
+                                      {expandedEventId === event.id && (
+                                        <motion.div
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{ height: "auto", opacity: 1 }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="overflow-hidden mt-4"
+                                        >
+                                          <div className="pt-4 space-y-3 border-t border-white/10">
+                                            <div className="grid grid-cols-2 gap-4 text-center">
+                                              <div>
+                                                <div className="text-white/50 text-sm">Duration</div>
+                                                <div className="text-white">{event.details?.duration}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-white/50 text-sm">Departure</div>
+                                                <div className="text-white">{event.details?.departure}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-white/50 text-sm">Arrival</div>
+                                                <div className="text-white">{event.details?.arrival || event.details?.cruising}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-white/50 text-sm">Price</div>
+                                                <div className="text-white">{event.details?.price}</div>
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="text-white/50 text-sm mb-1 text-center">Availability</div>
+                                              <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                                                <div 
+                                                  className="absolute inset-y-0 left-0 bg-yellow-400"
+                                                  style={{ width: `${(event.spots / event.totalSpots) * 100}%` }}
+                                                ></div>
+                                              </div>
+                                              <div className="text-white/70 text-sm mt-1 text-center">
+                                                {event.spots} spots left out of {event.totalSpots}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {activeSection === "Yacht" && (
+                          <div className="flex flex-col items-center justify-center flex-1 h-full">
+                            <p className="text-white/80 text-lg mb-1 text-center">The Yacht section is coming soon.</p>
+                            <p className="text-white/60 mb-4 text-center">We're working hard to bring you this feature!</p>
+                            <button
+                              className="px-6 py-2 rounded-full bg-[#181c27] border border-white/20 text-white/80 hover:bg-[#23283a] transition-colors flex items-center"
+                              onClick={handleBackClick}
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-2" />
+                              Back to Navigation
+                            </button>
+                          </div>
+                        )}
+                        {activeSection === "Cabins" && (
+                          <div className="flex flex-col items-center justify-center flex-1 h-full">
+                            <p className="text-white/80 text-lg mb-1 text-center">The Cabins section is coming soon.</p>
+                            <p className="text-white/60 mb-4 text-center">We're working hard to bring you this feature!</p>
+                            <button
+                              className="px-6 py-2 rounded-full bg-[#181c27] border border-white/20 text-white/80 hover:bg-[#23283a] transition-colors flex items-center"
+                              onClick={handleBackClick}
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-2" />
+                              Back to Navigation
+                            </button>
+                          </div>
+                        )}
+                        {activeSection === "Learning" && (
+                          <LearningModule onBack={handleBackClick} />
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -1783,11 +2151,24 @@ The menu now includes premium ingredients and luxury items while maintaining all
       {/* Charter Booking Modal */}
       <CharterBookingModal isOpen={isCharterModalOpen} onClose={() => setIsCharterModalOpen(false)} />
 
+      {/* PanPan 16CH Modal */}
+      <PanPanModal isOpen={isPanPanModalOpen} onClose={() => setIsPanPanModalOpen(false)} />
+
       {error && (
         <div className="text-red-400 text-sm mt-2">
           {error}
         </div>
       )}
+
+      {/* Event Details Modal */}
+      <AnimatePresence>
+        {selectedEvent && (
+          <EventDetailsModal 
+            event={selectedEvent} 
+            onClose={handleCloseEventDetails} 
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

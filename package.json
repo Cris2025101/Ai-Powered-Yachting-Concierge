@@ -1,12 +1,18 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "yaga-concierge",
+  "version": "1.0.0",
+  "description": "Yaga Concierge - Luxury Yacht Charter and Provision Management Platform",
   "private": true,
+  "author": "Yaga Concierge Team",
+  "keywords": ["yacht", "charter", "provisions", "luxury", "nextjs", "react"],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "deploy:vercel": "vercel --prod",
+    "deploy:railway": "railway up"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

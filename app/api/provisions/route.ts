@@ -185,52 +185,75 @@ const MEAL_PLAN_GUIDELINES = {
   breakfast: {
     base: [
       {
-        name: 'Continental',
-        items: ['Greek Yogurt (200g)', 'Fresh Berries Mix (100g)', 'Gluten-Free Bread (2 slices)', 'Nespresso Coffee (2 capsules)', 'Mineral Water (500ml)']
+        name: 'Luxury Continental',
+        items: ['Artisanal Greek Yogurt (300g)', 'Premium Fresh Berries Mix (150g)', 'Artisanal Gluten-Free Bread (3 slices)', 'Premium Coffee Beans (4 servings)', 'Sparkling Mineral Water (750ml)', 'Exotic Fruit Platter (mixed selection)']
       },
       {
-        name: 'Hot Breakfast',
-        items: ['Organic Eggs (2 pieces)', 'Gluten-Free Bread (2 slices)', 'Fresh Fruit (1 piece)', 'Nespresso Coffee (2 capsules)', 'Mineral Water (500ml)']
+        name: 'Gourmet Hot Breakfast',
+        items: ['Free-Range Organic Eggs (3 pieces)', 'Artisanal Bread (3 slices)', 'Premium Smoked Salmon (100g)', 'Fresh Avocado (1 piece)', 'Premium Coffee (4 servings)', 'Fresh Orange Juice (500ml)']
       },
       {
-        name: 'Light Start',
-        items: ['Fresh Fruit (2 pieces)', 'Gluten-Free Bread (2 slices)', 'Peanut Butter (30g)', 'Nespresso Coffee (2 capsules)', 'Natural Orange Juice (250ml)']
+        name: 'Exotic Start',
+        items: ['Tropical Fruit Selection (3 pieces)', 'Artisanal Bread (3 slices)', 'Premium Nut Butter (50g)', 'Premium Coffee (4 servings)', 'Fresh Coconut Water (500ml)', 'Artisanal Honey (30g)']
+      },
+      {
+        name: 'Mediterranean Breakfast',
+        items: ['Premium Feta Cheese (100g)', 'Artisanal Olives (50g)', 'Fresh Tomatoes (2 pieces)', 'Artisanal Bread (3 slices)', 'Premium Coffee (4 servings)', 'Fresh Lemon Water (500ml)']
+      },
+      {
+        name: 'Luxury Pancakes',
+        items: ['Premium Pancake Mix (200g)', 'Fresh Berries (150g)', 'Artisanal Maple Syrup (100ml)', 'Premium Butter (50g)', 'Premium Coffee (4 servings)', 'Fresh Orange Juice (500ml)']
       }
     ],
     beverages: [
-      'Nespresso Coffee (2 capsules per person)',
-      'Mineral Water (500ml per person)',
-      'Natural Orange Juice (250ml per person)'
+      'Premium Coffee Beans (4 servings per person)',
+      'Sparkling Mineral Water (750ml per person)',
+      'Fresh Orange Juice (500ml per person)',
+      'Premium Tea Selection (2 servings per person)',
+      'Fresh Coconut Water (500ml per person)'
     ]
   },
   snacks: {
     combinations: [
       {
-        name: 'Fruit & Nuts',
-        items: ['Fresh Fruit (1 piece)', 'Mineral Water (500ml)']
+        name: 'Premium Fruit & Nuts',
+        items: ['Exotic Fruit Selection (2 pieces)', 'Premium Mixed Nuts (100g)', 'Sparkling Water (500ml)', 'Artisanal Dark Chocolate (50g)']
       },
       {
-        name: 'Toast & Spread',
-        items: ['Gluten-Free Bread (1 slice)', 'Peanut Butter (15g)', 'Natural Orange Juice (250ml)']
+        name: 'Gourmet Cheese Board',
+        items: ['Premium Cheese Selection (150g)', 'Artisanal Crackers (100g)', 'Fresh Grapes (200g)', 'Premium Wine (250ml)', 'Sparkling Water (500ml)']
       },
       {
-        name: 'Yogurt & Fruit',
-        items: ['Greek Yogurt (150g)', 'Fresh Berries Mix (50g)', 'Mineral Water (500ml)']
+        name: 'Luxury Yogurt Parfait',
+        items: ['Premium Greek Yogurt (200g)', 'Fresh Berries (100g)', 'Premium Granola (50g)', 'Artisanal Honey (30g)', 'Sparkling Water (500ml)']
+      },
+      {
+        name: 'Mediterranean Platter',
+        items: ['Premium Olives (100g)', 'Artisanal Bread (2 slices)', 'Premium Hummus (100g)', 'Fresh Vegetables (150g)', 'Sparkling Water (500ml)']
+      },
+      {
+        name: 'Tropical Delight',
+        items: ['Fresh Tropical Fruits (300g)', 'Premium Coconut Chips (50g)', 'Artisanal Dark Chocolate (50g)', 'Fresh Coconut Water (500ml)']
       }
     ]
   },
   portions: {
     beverages: {
-      water: 2000,      // ml per person per day
-      coffee: 2,        // capsules per person per breakfast
-      juice: 500        // ml per person per day
+      water: 3000,      // ml per person per day (increased for yacht charter)
+      coffee: 4,        // servings per person per breakfast (increased)
+      juice: 1000,      // ml per person per day (increased)
+      wine: 250,        // ml per person per day (added for luxury)
+      tea: 2            // servings per person per day (added)
     },
     breakfast: {
-      bread: 2,         // slices per person
-      eggs: 2,          // pieces per person
-      yogurt: 200,      // g per person
-      berries: 100,     // g per person
-      fruit: 1          // piece per person
+      bread: 3,         // slices per person (increased)
+      eggs: 3,          // pieces per person (increased)
+      yogurt: 300,      // g per person (increased)
+      berries: 150,     // g per person (increased)
+      fruit: 2,         // pieces per person (increased)
+      cheese: 100,      // g per person (added)
+      salmon: 100,      // g per person (added for luxury)
+      avocado: 1        // piece per person (added)
     },
     snacks: {
       bread: 1,         // slice per person
@@ -315,14 +338,22 @@ Each day should include all selected meal types with their premium enhancements.
     // Prepare the prompt for OpenAI
     const catalogInstructions = `
 When generating the provisions list:
-1. ONLY use products from the YAGA catalog
-2. Use exact prices from the catalog
+1. PREFER products from the YAGA catalog when available
+2. If a product is not in the YAGA catalog, use realistic pricing based on Greek yacht provisioning stores (Yachtness Store, Balaskas Shop)
 3. Respect dietary restrictions:
    - For gluten-free guests, only use products marked isGlutenFree: true
    - For vegan guests, only use products marked isVegan: true
    - For pescatarian guests, only use products marked isPescatarian: true
-4. Check product availability (availability: true)
-5. Use exact product names as listed in the catalog
+4. For products not in catalog, use standard yacht provisioning pricing:
+   - Still Water: €0.80 per 500ml bottle
+   - Mineral Water: €1.20 per 500ml bottle
+   - Fresh Produce: €3-8 per kg
+   - Premium Coffee: €35 per kg
+   - Fresh Juice: €4 per liter
+   - Premium Cheese: €15-20 per kg
+   - Fresh Fish: €25-40 per kg
+   - Premium Meat: €30-50 per kg
+5. Use realistic product names and quantities
 6. IMPORTANT: Aim to keep the total cost at or below €${targetBudget} to ensure we stay within the maximum budget of €${body.budget}`;
 
     const adults = body.adults;
@@ -346,6 +377,8 @@ When generating the provisions list:
 ${childrenPrompt}
 ${adultsPrompt}
 As a luxury yacht provisioning expert, create a detailed provisions list and meal plan for a yacht charter with the following specifications:
+
+IMPORTANT: Use realistic pricing based on Greek yacht provisioning stores like Yachtness Store and Balaskas Shop. Focus on quality products available in Greek marinas.
 
 Trip Duration: ${body.tripDuration}
 Total People: ${body.totalPeople}
@@ -526,7 +559,7 @@ IMPORTANT VALIDATION RULES:
       items: [{
         name: 'Still Water',
         quantity: `${waterNeeds.still} bottles`,
-        estimatedPrice: 0.5 // €0.50 per 500ml bottle
+        estimatedPrice: 0.8 // €0.80 per 500ml bottle (Yachtness Store pricing)
       }]
     });
 
@@ -535,7 +568,7 @@ IMPORTANT VALIDATION RULES:
       items: [{
         name: 'Mineral Water',
         quantity: `${waterNeeds.mineral} bottles`,
-        estimatedPrice: 0.8 // €0.80 per 500ml bottle
+        estimatedPrice: 1.2 // €1.20 per 500ml bottle (Yachtness Store pricing)
       }]
     });
 
@@ -856,26 +889,29 @@ function determineCategory(ingredient: string): string {
 
 // Update budget percentages to strictly enforce water budget split
 const CATEGORY_BUDGET_LIMITS: Record<string, number> = {
-  'Still Water': 7,        // 70% of water budget (7% of total budget)
-  'Mineral Water': 3,      // 30% of water budget (3% of total budget)
-  'Beverages': 10,         // Other beverages (juices, coffee, tea, etc.)
-  'Fresh Fruits': 12,
-  'Fresh Produce': 15,
-  'Breakfast': 10,
-  'Dinner Ingredients': 30,
-  'Snacks': 8,            // Consolidated snacks category
-  'Miscellaneous': 5
+  'Still Water': 6,        // 60% of water budget (6% of total budget)
+  'Mineral Water': 4,      // 40% of water budget (4% of total budget)
+  'Beverages': 12,         // Other beverages (juices, coffee, tea, etc.)
+  'Fresh Fruits': 15,
+  'Fresh Produce': 18,
+  'Breakfast': 12,
+  'Dinner Ingredients': 35,
+  'Snacks': 10,           // Consolidated snacks category
+  'Premium Meat': 20,     // Premium meat category from Yachtness
+  'Premium Fish & Seafood': 20, // Premium seafood category
+  'Gourmet Products': 15,  // Gourmet products category
+  'Miscellaneous': 8
 };
 
 // Update the validation function to strictly enforce water budget limits
 function validateCategoryBudget(category: string, currentAmount: number, totalBudget: number): number {
-  // Special handling for water categories to strictly maintain 70/30 split
+  // Special handling for water categories to strictly maintain 60/40 split
   if (category === 'Still Water' || category === 'Mineral Water') {
     const totalWaterBudget = totalBudget * 0.10; // 10% of total budget for water
     if (category === 'Still Water') {
-      return Math.min(currentAmount, totalWaterBudget * 0.7); // Strictly 70% of water budget
+      return Math.min(currentAmount, totalWaterBudget * 0.6); // Strictly 60% of water budget
     } else {
-      return Math.min(currentAmount, totalWaterBudget * 0.3); // Strictly 30% of water budget
+      return Math.min(currentAmount, totalWaterBudget * 0.4); // Strictly 40% of water budget
     }
   }
 
@@ -889,9 +925,9 @@ function calculateWaterNeeds(
   days: number,
   people: number
 ): { still: number; mineral: number } {
-  const TOTAL_WATER_PER_PERSON = 1700;   // 1.7L (1700ml) per person per day
-  const STILL_PERCENTAGE = 0.7;           // 70% still water (1.19L per person)
-  const MINERAL_PERCENTAGE = 0.3;         // 30% mineral water (0.51L per person)
+  const TOTAL_WATER_PER_PERSON = 3000;   // 3L per person per day (increased for yacht charter)
+  const STILL_PERCENTAGE = 0.6;           // 60% still water (1.8L per person)
+  const MINERAL_PERCENTAGE = 0.4;         // 40% mineral water (1.2L per person)
   const BOTTLE_SIZE = 500;                // 500ml bottles
 
   // Calculate total water needed for all people for all days
@@ -925,12 +961,12 @@ function handleSpecialItem(
     if (ingredientLower.includes('mineral')) {
       return {
         quantity: `${waterNeeds.mineral} bottles`,
-        estimatedCost: 0.8 // Price per bottle, total cost calculated in category validation
+        estimatedCost: 1.2 // Price per bottle (Yachtness Store pricing)
       };
     } else if (!ingredientLower.match(/mineral|coconut/)) {
       return {
         quantity: `${waterNeeds.still} bottles`,
-        estimatedCost: 0.5 // Price per bottle, total cost calculated in category validation
+        estimatedCost: 0.8 // Price per bottle (Yachtness Store pricing)
       };
     }
   }
@@ -941,7 +977,7 @@ function handleSpecialItem(
     const pieces = Math.ceil(people * days * piecesPerMeal);
     return {
       quantity: `${pieces} pieces`,
-      estimatedCost: pieces * 2 // €2 per avocado
+      estimatedCost: pieces * 2.5 // €2.50 per avocado (Yachtness Store pricing)
     };
   }
 
@@ -961,7 +997,7 @@ function handleSpecialItem(
     const totalGrams = Math.ceil(people * days * gramsPerMeal);
     return {
       quantity: `${Math.ceil(totalGrams / 1000)}kg`,
-      estimatedCost: Math.ceil(totalGrams / 1000) * 8 // €8 per kg
+      estimatedCost: Math.ceil(totalGrams / 1000) * 12 // €12 per kg (Yachtness Store pricing)
     };
   }
 
@@ -971,7 +1007,7 @@ function handleSpecialItem(
     const totalKg = Math.ceil((people * days * gramsPerDay) / 1000);
     return {
       quantity: `${totalKg}kg`,
-      estimatedCost: totalKg * 4 // €4 per kg
+      estimatedCost: totalKg * 5 // €5 per kg (Yachtness Store pricing)
     };
   }
 
@@ -982,7 +1018,7 @@ function handleSpecialItem(
     const kgNeeded = Math.ceil(totalGrams / 1000);
     return {
       quantity: `${kgNeeded}kg`,
-      estimatedCost: kgNeeded * 25 // €25 per kg for quality coffee
+      estimatedCost: kgNeeded * 35 // €35 per kg for premium coffee (Yachtness Store pricing)
     };
   }
 
@@ -993,7 +1029,7 @@ function handleSpecialItem(
     const bottles = Math.ceil(totalLiters / 1); // 1L bottles
     return {
       quantity: `${bottles} bottles`,
-      estimatedCost: bottles * 3 // €3 per bottle
+      estimatedCost: bottles * 4 // €4 per bottle (Yachtness Store pricing)
     };
   }
 
@@ -1018,19 +1054,83 @@ function getEstimatedPrice(ingredient: string): number {
   }
 
   const priceMap: Record<string, number> = {
+    // Water types
     'coconut water': 1.8,    // Per 500ml
-    'orange juice': 2.5,     // Per liter
-    'cold-pressed juice': 10, // Per bottle
-    'coffee': 30,            // Per kg
-    'tea': 20,              // Per kg
-    // ... rest of prices ...
+    'sparkling water': 1.5,  // Per 500ml
+    
+    // Beverages
+    'orange juice': 4,       // Per liter (Yachtness Store pricing)
+    'cold-pressed juice': 6, // Per bottle
+    'coffee': 35,            // Per kg (Yachtness Store pricing)
+    'tea': 25,              // Per kg
+    
+    // Dairy
+    'milk': 2,              // Per liter
+    'yogurt': 4,            // Per 500g
+    'cheese': 15,           // Per kg
+    
+    // Proteins
+    'salmon': 30,           // Per kg
+    'fish': 25,             // Per kg
+    'meat': 30,             // Per kg
+    'beef': 35,             // Per kg
+    'chicken': 20,          // Per kg
+    
+    // Fresh produce
+    'vegetables': 5,        // Per kg
+    'fruits': 6,            // Per kg
+    'tomatoes': 5,          // Per kg
+    'avocado': 2.5,         // Per piece
+    
+    // Grains & staples
+    'bread': 3,             // Per loaf
+    'quinoa': 12,           // Per kg
+    'rice': 4,              // Per kg
+    
+    // Snacks & extras
+    'nuts': 12,             // Per kg
+    'olives': 8,            // Per kg
+    'honey': 15,            // Per kg
+    'wine': 15,             // Per bottle
+    'beer': 2,              // Per bottle
+    
+    // Premium items
+    'premium': 20,          // Premium products
+    'artisanal': 15,        // Artisanal products
+    'organic': 12,          // Organic products
+    'wagyu': 50,            // Premium beef
+    'lobster': 40,          // Premium seafood
+    'truffle': 25,          // Luxury ingredients
+    'caviar': 100           // Luxury items
   };
 
   const matches = Object.entries(priceMap)
     .filter(([key]) => ingredientLower.includes(key))
     .sort((a, b) => b[0].length - a[0].length);
 
-  return matches.length > 0 ? matches[0][1] : 5;
+  return matches.length > 0 ? matches[0][1] : 8; // Default price increased to €8 for yacht provisioning
+}
+
+// Function to handle products not in YAGA catalog
+function handleNonCatalogProduct(ingredient: string, days: number, people: number): { quantity: string; estimatedCost: number; category: string } {
+  const ingredientLower = ingredient.toLowerCase();
+  
+  // Calculate base quantity per person per day
+  const baseQuantity = 100; // Default 100g per person per day
+  const totalQuantity = Math.ceil(people * days * baseQuantity / 1000); // Convert to kg
+  
+  // Get estimated price
+  const pricePerKg = getEstimatedPrice(ingredient);
+  const estimatedCost = totalQuantity * pricePerKg;
+  
+  // Determine category
+  const category = determineCategory(ingredient);
+  
+  return {
+    quantity: `${totalQuantity}kg`,
+    estimatedCost,
+    category
+  };
 }
 
 // Update the main calculation function
@@ -1052,13 +1152,13 @@ function calculateQuantityFromGuidelines(
       const quantity = waterNeeds.mineral;
       return {
         quantity: `${quantity} bottles`,
-        estimatedCost: quantity * 0.8 // Total cost for all mineral water bottles
+        estimatedCost: quantity * 1.2 // Total cost for all mineral water bottles (Yachtness Store pricing)
       };
     } else if (ingredientLower.includes('still') || !ingredientLower.match(/mineral|coconut/)) {
       const quantity = waterNeeds.still;
       return {
         quantity: `${quantity} bottles`,
-        estimatedCost: quantity * 0.5 // Total cost for all still water bottles
+        estimatedCost: quantity * 0.8 // Total cost for all still water bottles (Yachtness Store pricing)
       };
     }
   }

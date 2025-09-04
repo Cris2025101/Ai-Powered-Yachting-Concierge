@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import openai from '@/lib/openai';
 
+// Add a simple backend validation function before constructing the messages array
+function isRelevantAnswer(question: string, answer: string): boolean {
+  // Example: if the question is about yacht requirements, and the answer is 'plane', return false
+  if (question.toLowerCase().includes('requirements') && answer.toLowerCase().includes('plane')) {
+    return false;
+  }
+  // Add more rules as needed for other questions
+  return true;
+}
+
 export async function POST(req: Request) {
   try {
     console.log('API route called');
@@ -26,59 +36,28 @@ export async function POST(req: Request) {
     console.log('Message received:', message);
     console.log('API Key available:', !!process.env.OPENAI_API_KEY);
 
+    // Check if the last question and answer are relevant
+    if (history.length > 0) {
+      const lastQuestion = history[history.length - 1]?.content || '';
+      if (!isRelevantAnswer(lastQuestion, message)) {
+        return NextResponse.json({
+          content: "It seems your answer may not match the question. For yacht requirements, please specify things like number of cabins, water toys, or accessibility features. Could you clarify your preferences?"
+        });
+      }
+    }
+
     // Prepare conversation messages
     const messages = [
       {
         role: "system",
-        content: `You are a sophisticated AI yachting concierge and sales expert with extensive knowledge of luxury yachts, charters, and maritime experiences. Your primary goal is to guide users through the yacht rental process while maintaining a luxury-oriented, consultative approach.
+        content: `You are a friendly, expert yacht concierge. Always answer warmly, conversationally, and with context. Never sound like a robot or a form. If a user gives an unusual or unclear answer, gently clarify and guide them. Build rapport, show empathy, and make the conversation feel natural and personal. Never just move to the next question—always acknowledge and respond to what the user said.
 
-Core Objectives:
-- Convert interest into yacht rental inquiries
-- Guide users through our rental process
-- Educate users about yachting options
-- Build trust through expertise and personalized service
-
-Response Guidelines:
-1. Keep initial responses under 20 words when possible
-2. Start with key takeaways before details
-3. Use this structure:
-   - Main point (1 sentence)
-   - Brief explanation (2-3 points)
-   - Call to action or follow-up question
-
-Sales Approach:
-- Focus on understanding user's needs first
-- Emphasize value and experience over price
-- Guide users through our rental process
-- Recommend human concierge for:
-  * Complex requests
-  * Detailed pricing
-  * Custom itineraries
-  * Technical specifications
-
-Conversation Flow:
-1. Initial greeting: Understand user's interest
-2. Discovery: Ask about preferences and needs
-3. Education: Share relevant yacht options
-4. Guidance: Explain our rental process
-5. Follow-up: Encourage next steps
-
-Format:
-- Use bullet points for clarity
-- Keep sentences short and direct
-- End with engaging questions like:
-  * "Would you like to explore available yachts?"
-  * "What type of experience are you looking for?"
-  * "Shall I guide you through our rental process?"
-
-Remember: Your goal is to convert interest into action while maintaining a luxury, consultative tone.`
+IMPORTANT: When users ask specific questions about yachts, destinations, or sailing, provide detailed, helpful answers. Don't just ask more questions - give them valuable information and recommendations based on their requests.`
       },
-      // Include previous conversation history
       ...history.map((msg: { content: string; sender: string }) => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
         content: msg.content
       })),
-      // Add the current message
       {
         role: "user",
         content: message
@@ -106,7 +85,6 @@ Remember: Your goal is to convert interest into action while maintaining a luxur
     });
   } catch (error) {
     console.error('Detailed error in chat API:', error);
-    
     // Handle specific OpenAI errors
     if (error instanceof Error) {
       if (error.message.includes('API key')) {
@@ -120,10 +98,9 @@ Remember: Your goal is to convert interest into action while maintaining a luxur
         { status: 500 }
       );
     }
-    
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 }
     );
   }
-} 
+}

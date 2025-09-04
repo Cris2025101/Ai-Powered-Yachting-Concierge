@@ -13,14 +13,48 @@ type Message = {
   timestamp: Date
 }
 
+type SailingExperience = {
+  level: 'beginner' | 'intermediate' | 'advanced';
+  previousAreas: string[];
+  yearsOfExperience: number;
+};
+
+type TripRequirements = {
+  groupSize: number;
+  preferredArea: string;
+  dates: {
+    start: string;
+    end: string;
+  };
+  budget: string;
+  experience: SailingExperience;
+};
+
 export function ChatInterface() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState("")
+  const [tripRequirements, setTripRequirements] = useState<any>({})
+  const questions = [
+    "Are you sailing with family, friends, or solo?",
+    "What's your sailing experience level?",
+    "Where would you like to sail?",
+    "How many people will be on board?",
+    "What's your budget range? (This is very important for recommendations)",
+    "What's your preferred departure port?",
+    "Do you have any specific requirements for the vessel?",
+  ];
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content: "Hello! I'm your AI yachting concierge. How can I assist you today?",
+      content: "Hello! I'm your AI yachting concierge. To help you find the perfect boat, I'll ask you a few questions.",
+      sender: "ai",
+      timestamp: new Date(),
+    },
+    {
+      id: "q0",
+      content: questions[0],
       sender: "ai",
       timestamp: new Date(),
     },
@@ -28,6 +62,45 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const generalQuestionPrefixes = [
+    'how', 'what', 'where', 'when', 'why', 'can', 'do', 'is', 'are', 'should', 'could', 'would', 'will', 'who'
+  ];
+
+  const sailingKeywords = [
+    'sail', 'yacht', 'boat', 'marina', 'charter', 'catamaran', 'monohull', 'port', 'harbor', 'island', 'cruise', 'nautical', 'marine', 'sea', 'ocean', 'travel', 'trip', 'voyage', 'skipper', 'crew', 'anchorage', 'mooring', 'navigation', 'weather', 'wind', 'route', 'destination', 'greece', 'mediterranean', 'adriatic', 'caribbean', 'provision', 'itinerary', 'vacation', 'holiday'
+  ];
+
+  const offTopicResponseIndexRef = useRef(0);
+  const offTopicResponses = [
+    {
+      message: "That topic isn't related to yachting or sailing. For other information, you may want to check different sources.",
+      control: "By the way, are you planning a sailing trip soon?"
+    },
+    {
+      message: "I'm focused on yachting, sailing, and travel topics. Other questions are best answered elsewhere.",
+      control: "Is there a destination or boat type you're interested in?"
+    },
+    {
+      message: "I specialize in sailing and yacht advice. For unrelated topics, please consult other resources.",
+      control: "Are you considering a vacation on the water this year?"
+    },
+    {
+      message: "My expertise is in yachting and marine travel. For other topics, try a general search.",
+      control: "Would you like help planning a sailing itinerary?"
+    },
+    {
+      message: "I can best assist with yachting, sailing, or marine travel questions.",
+      control: "What kind of sailing experience are you looking for?"
+    }
+  ];
+
+  const CONTROL_QUESTION_ID = 'control_sailing_trip';
+  const CONTROL_QUESTION = "Are you planning a sailing trip soon?";
+  const CONTROL_FOLLOWUP = "Wonderful! When are you planning to sail, or where would you like to go?";
+
+  const [lastQuestionType, setLastQuestionType] = useState<'structured' | 'control' | 'followup' | null>(null);
+  const [lastControlContext, setLastControlContext] = useState<string | null>(null);
 
   // Add the new event listener
   useEffect(() => {
@@ -64,21 +137,56 @@ export function ChatInterface() {
     }
     setMessages((prev) => [...prev, userMessage])
     setMessage("")
-
-    // Show AI typing indicator
     setIsTyping(true)
 
+    // Check if the last AI message was a control question
+    const lastAiMsg = messages.filter(m => m.sender === 'ai').slice(-1)[0];
+    if (lastQuestionType === 'control' && lastControlContext) {
+      // Use the user's answer as the sailing area or boat type
+      let followupMsg = '';
+      if (lastControlContext.includes('destination')) {
+        followupMsg = `What's your sailing experience level in ${message.trim()}?`;
+        setLastQuestionType('followup');
+      } else if (lastControlContext.includes('boat type')) {
+        followupMsg = `How many people will be on board your ${message.trim()}?`;
+        setLastQuestionType('followup');
+      } else if (lastControlContext.includes('vacation')) {
+        followupMsg = `Where would you like to go for your sailing vacation?`;
+        setLastQuestionType('followup');
+      } else if (lastControlContext.includes('itinerary')) {
+        followupMsg = `What dates are you considering for your sailing itinerary?`;
+        setLastQuestionType('followup');
+      } else if (lastControlContext.includes('experience')) {
+        followupMsg = `What's your sailing experience level?`;
+        setLastQuestionType('followup');
+      } else {
+        followupMsg = `Great! When are you planning to sail?`;
+        setLastQuestionType('followup');
+      }
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: 'followup_' + Date.now(),
+            content: followupMsg,
+            sender: "ai",
+            timestamp: new Date(),
+          }
+        ]);
+        setIsTyping(false);
+      }, 600);
+      setLastControlContext(null);
+      return;
+    }
+
+    // Send ALL messages directly to API for better responses
     try {
-      // Get conversation history (excluding the welcome message)
       const history = messages
         .filter(msg => msg.id !== 'welcome')
         .map(msg => ({
           content: msg.content,
           sender: msg.sender
         }));
-
-      console.log('Sending message to API:', message);
-      // Call the API with message and history
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -87,27 +195,20 @@ export function ChatInterface() {
         },
         body: JSON.stringify({ 
           message,
-          history 
+          history
         }),
       });
-
       let data;
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
         data = await response.json();
       } else {
         const text = await response.text();
-        console.error('Received non-JSON response:', text);
         throw new Error('Received non-JSON response from server');
       }
-
       if (!response.ok) {
         throw new Error(data.error || 'Failed to get AI response');
       }
-
-      console.log('Received response from API:', data);
-
-      // Add AI response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.content,
@@ -116,8 +217,6 @@ export function ChatInterface() {
       }
       setMessages((prev) => [...prev, aiMessage])
     } catch (error) {
-      console.error('Chat error:', error);
-      // Add error message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again later.",
@@ -128,6 +227,137 @@ export function ChatInterface() {
     } finally {
       setIsTyping(false)
     }
+    setLastQuestionType('structured');
+    setLastControlContext(null);
+    return;
+
+    // Save answer to tripRequirements
+    const updatedRequirements = { ...tripRequirements };
+    const qIdx = currentQuestionIndex;
+    const keys = [
+      'sailingWith',
+      'experienceLevel',
+      'sailingArea',
+      'groupSize',
+      'budget',
+      'departurePort',
+      'specialRequirements',
+    ];
+    updatedRequirements[keys[qIdx]] = message;
+    setTripRequirements(updatedRequirements);
+
+    // If just answered the area question, ask about experience in that area
+    if (qIdx === 2) {
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `q_area_exp` ,
+            content: `Have you sailed in ${message} before?`,
+            sender: "ai",
+            timestamp: new Date(),
+          }
+        ]);
+        setCurrentQuestionIndex(idx => idx + 1); // skip to next question after this
+        setIsTyping(false);
+      }, 600);
+      setLastQuestionType('structured');
+      setLastControlContext(null);
+      return;
+    }
+
+    // If just answered the area experience question, continue with next question
+    if (qIdx === 3 && messages[messages.length-1]?.id === 'q_area_exp') {
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `q${qIdx}`,
+            content: questions[qIdx],
+            sender: "ai",
+            timestamp: new Date(),
+          }
+        ]);
+        setCurrentQuestionIndex(idx => idx + 1);
+        setIsTyping(false);
+      }, 600);
+      setLastQuestionType('structured');
+      setLastControlContext(null);
+      return;
+    }
+
+    // If not last question, ask next question
+    if (currentQuestionIndex < questions.length - 1) {
+      setTimeout(() => {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `q${currentQuestionIndex + 1}`,
+            content: questions[currentQuestionIndex + 1],
+            sender: "ai",
+            timestamp: new Date(),
+          }
+        ]);
+        setCurrentQuestionIndex(idx => idx + 1);
+        setIsTyping(false);
+      }, 600);
+      setLastQuestionType('structured');
+      setLastControlContext(null);
+      return;
+    }
+
+    // If all questions answered, send summary to API
+    try {
+      // Compose a more human, context-aware summary for the AI
+      const summary = `User context: Sailing with: ${updatedRequirements.sailingWith}; Experience: ${updatedRequirements.experienceLevel}; Sailed area before: ${updatedRequirements.sailedAreaBefore}; Area: ${updatedRequirements.sailingArea}; Group size: ${updatedRequirements.groupSize}; Budget (very important): ${updatedRequirements.budget}; Departure port: ${updatedRequirements.departurePort}; Special requirements: ${updatedRequirements.specialRequirements}.
+
+Budget is a key factor for recommendations. If user is a beginner or unfamiliar with the area, recommend a safe, beginner-friendly area (e.g., Greece Alimos). Suggest a suitable catamaran (e.g., Lagoon 42) for the group size, emphasizing comfort and space. End by asking: 'Would you like to search the exact price for this boat?'. Make the conversation warm and human.`;
+      const history = [
+        ...messages.filter(msg => msg.sender === 'user' || msg.sender === 'ai').map(msg => ({ content: msg.content, sender: msg.sender })),
+        { content: summary, sender: 'user' }
+      ];
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+          message: summary,
+          history
+        }),
+      });
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error('Received non-JSON response from server');
+      }
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.content,
+        sender: "ai",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, aiMessage])
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again later.",
+        sender: "ai",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsTyping(false)
+    }
+    setLastQuestionType('structured');
+    setLastControlContext(null);
   }
 
   return (

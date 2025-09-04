@@ -25,6 +25,13 @@ export function RegisterForm({ onSignInClick }: RegisterFormProps) {
     setIsLoading(true)
     setError(null)
 
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      setError('Authentication is not configured yet. Please contact the administrator.')
+      setIsLoading(false)
+      return
+    }
+
     try {
       const { error: signUpError } = await supabase.auth.signUp({
         email,
