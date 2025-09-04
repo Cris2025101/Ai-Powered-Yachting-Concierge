@@ -16,8 +16,8 @@ export async function POST(req: Request) {
     console.log('API route called');
     
     // Validate request
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OpenAI API key is missing');
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'dummy-key-for-build') {
+      console.error('OpenAI API key is missing or invalid');
       return NextResponse.json(
         { error: 'OpenAI API key is not configured' },
         { status: 500 }
