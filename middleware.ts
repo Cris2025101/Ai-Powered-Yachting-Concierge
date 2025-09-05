@@ -1,63 +1,23 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // List of public routes that don't require authentication
-const publicRoutes = ['/', '/about', '/how-it-works', '/auth']
+const publicRoutes = ['/', '/about', '/how-it-works', '/auth', '/cards', '/logo', '/loyalty-club', '/yacht-results']
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
-
-  const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
 
   // Allow public routes
   if (publicRoutes.includes(pathname)) {
-    return response
+    return NextResponse.next()
   }
 
-  // If user is not signed in and trying to access protected route,
-  // redirect the user to /auth
-  if (!session && !pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/auth', request.url))
+  // Allow API routes
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
   }
 
-  // If user is signed in and trying to access /auth,
-  // redirect the user to /profile
-  if (session && pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/profile', request.url))
-  }
-
-  return response
+  // For now, allow all other routes (we'll add auth later)
+  return NextResponse.next()
 }
 
 export const config = {
