@@ -1,3 +1,5 @@
+# Yaga Concierge - Version 1.0.4
+
 ## YachtSys Widget Integration
 
 - The yacht search on `/yacht-results` uses the YachtSys widget.
