@@ -117,9 +117,10 @@ interface AllergyPreference {
 
 // Enhanced calculation functions
 const calculateItemTotal = (item: any): number => {
-  if (!item.estimatedPrice || typeof item.estimatedPrice !== 'number') {
-    console.warn(`Invalid price for item: ${item.name}`);
-    return 0;
+  if (!item.estimatedPrice || typeof item.estimatedPrice !== 'number' || item.estimatedPrice <= 0) {
+    console.warn(`Invalid price for item: ${item.name}, price: ${item.estimatedPrice}`);
+    // Return a default price instead of 0 to avoid breaking calculations
+    return 10; // Default price for items without valid pricing
   }
 
   // Extract quantity number from the quantity string
@@ -679,9 +680,19 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
     console.log('Received meal suggestions:', suggestions);
     
     return suggestions.every(day => 
-      day.meals.every(meal => 
-        activeMealTypes.includes(meal.type.toLowerCase()) // Case-insensitive comparison
-      )
+      day.meals.every(meal => {
+        // Check meal type
+        const hasValidMealType = activeMealTypes.includes(meal.type.toLowerCase());
+        
+        // Check that all items have valid pricing
+        const hasValidPricing = meal.items.every(item => 
+          item.estimatedPrice && 
+          typeof item.estimatedPrice === 'number' && 
+          item.estimatedPrice > 0
+        );
+        
+        return hasValidMealType && hasValidPricing;
+      })
     );
   };
 
@@ -1076,7 +1087,13 @@ The menu now includes premium ingredients and luxury items while maintaining all
       
     } catch (err) {
       console.error('Error enhancing provisions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to enhance provisions list');
+      
+      // Handle specific price validation errors more gracefully
+      if (err instanceof Error && err.message.includes('Invalid price')) {
+        setError('There was an issue with item pricing. Please try again or contact support if the problem persists.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to enhance provisions list');
+      }
     } finally {
       setIsGeneratingProvisions(false);
     }
