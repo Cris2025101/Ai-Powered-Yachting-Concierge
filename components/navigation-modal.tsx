@@ -673,27 +673,49 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
   };
 
   const validateMealSuggestions = (suggestions: DayMealPlan[]): boolean => {
-    const activeMealTypes = getActiveMealTypes();
-    
-    // Log for debugging
-    console.log('Active meal types:', activeMealTypes);
-    console.log('Received meal suggestions:', suggestions);
-    
-    return suggestions.every(day => 
-      day.meals.every(meal => {
-        // Check meal type
-        const hasValidMealType = activeMealTypes.includes(meal.type.toLowerCase());
+    try {
+      const activeMealTypes = getActiveMealTypes();
+      
+      // Log for debugging
+      console.log('Active meal types:', activeMealTypes);
+      console.log('Received meal suggestions:', suggestions);
+      
+      // Check if suggestions is valid
+      if (!suggestions || !Array.isArray(suggestions)) {
+        console.warn('Invalid suggestions format:', suggestions);
+        return false;
+      }
+      
+      return suggestions.every(day => {
+        if (!day || !day.meals || !Array.isArray(day.meals)) {
+          console.warn('Invalid day format:', day);
+          return false;
+        }
         
-        // Check that all items have valid pricing
-        const hasValidPricing = meal.items.every(item => 
-          item.estimatedPrice && 
-          typeof item.estimatedPrice === 'number' && 
-          item.estimatedPrice > 0
-        );
-        
-        return hasValidMealType && hasValidPricing;
-      })
-    );
+        return day.meals.every(meal => {
+          if (!meal || !meal.type) {
+            console.warn('Invalid meal format:', meal);
+            return false;
+          }
+          
+          // Check meal type
+          const hasValidMealType = activeMealTypes.includes(meal.type.toLowerCase());
+          
+          // Check that all items have valid pricing
+          const hasValidPricing = meal.items && Array.isArray(meal.items) ? 
+            meal.items.every(item => 
+              item.estimatedPrice && 
+              typeof item.estimatedPrice === 'number' && 
+              item.estimatedPrice > 0
+            ) : true; // If no items array, consider it valid
+          
+          return hasValidMealType && hasValidPricing;
+        });
+      });
+    } catch (error) {
+      console.error('Error validating meal suggestions:', error);
+      return false;
+    }
   };
 
   const handleGenerateProvisions = async () => {
