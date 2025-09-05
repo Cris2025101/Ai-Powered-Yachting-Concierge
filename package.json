@@ -5,7 +5,6 @@
   "private": true,
   "author": "Yaga Concierge Team",
   "keywords": ["yacht", "charter", "provisions", "luxury", "nextjs", "react"],
-  // Final redeploy - all systems ready
   "scripts": {
     "dev": "next dev",
     "build": "next build",
