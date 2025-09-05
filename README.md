@@ -5,3 +5,4 @@
 - The widget will automatically load and replace the placeholder.
 - For custom styling or user experience, edit `app/yacht-results/page.tsx`.
 - The page includes a placeholder and navigation options for users until the widget is live. # Force redeploy Thu Sep  4 18:16:12 EEST 2025
+# Force fresh deployment Fri Sep  5 08:28:18 EEST 2025
