@@ -5,7 +5,7 @@
   "private": true,
   "author": "Yaga Concierge Team",
   "keywords": ["yacht", "charter", "provisions", "luxury", "nextjs", "react"],
-  // Force redeploy to pick up environment variables
+  // Force redeploy after Supabase connection
   "scripts": {
     "dev": "next dev",
     "build": "next build",
