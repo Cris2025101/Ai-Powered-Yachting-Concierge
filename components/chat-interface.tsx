@@ -187,6 +187,9 @@ export function ChatInterface() {
           content: msg.content,
           sender: msg.sender
         }));
+      
+      console.log('Sending request to /api/chat with:', { message, history });
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -198,6 +201,9 @@ export function ChatInterface() {
           history
         }),
       });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
       let data;
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
