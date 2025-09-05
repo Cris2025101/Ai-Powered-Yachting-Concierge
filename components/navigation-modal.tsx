@@ -687,30 +687,53 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
       }
       
       return suggestions.every(day => {
-        if (!day || !day.meals || !Array.isArray(day.meals)) {
-          console.warn('Invalid day format:', day);
-          return false;
-        }
-        
-        return day.meals.every(meal => {
-          if (!meal || !meal.type) {
-            console.warn('Invalid meal format:', meal);
+        try {
+          if (!day || !day.meals || !Array.isArray(day.meals)) {
+            console.warn('Invalid day format:', day);
             return false;
           }
           
-          // Check meal type
-          const hasValidMealType = activeMealTypes.includes(meal.type.toLowerCase());
-          
-          // Check that all items have valid pricing
-          const hasValidPricing = meal.items && Array.isArray(meal.items) ? 
-            meal.items.every(item => 
-              item.estimatedPrice && 
-              typeof item.estimatedPrice === 'number' && 
-              item.estimatedPrice > 0
-            ) : true; // If no items array, consider it valid
-          
-          return hasValidMealType && hasValidPricing;
-        });
+          return day.meals.every(meal => {
+            try {
+              if (!meal || !meal.type) {
+                console.warn('Invalid meal format:', meal);
+                return false;
+              }
+              
+              // Check meal type
+              const hasValidMealType = activeMealTypes.includes(meal.type.toLowerCase());
+              
+              // Check that all items have valid pricing - with extra safety
+              let hasValidPricing = true;
+              if (meal.items) {
+                if (Array.isArray(meal.items)) {
+                  hasValidPricing = meal.items.every(item => {
+                    try {
+                      return item && 
+                        item.estimatedPrice && 
+                        typeof item.estimatedPrice === 'number' && 
+                        item.estimatedPrice > 0;
+                    } catch (itemError) {
+                      console.warn('Error validating item:', item, itemError);
+                      return false;
+                    }
+                  });
+                } else {
+                  console.warn('Items is not an array:', meal.items);
+                  hasValidPricing = false;
+                }
+              }
+              
+              return hasValidMealType && hasValidPricing;
+            } catch (mealError) {
+              console.warn('Error validating meal:', meal, mealError);
+              return false;
+            }
+          });
+        } catch (dayError) {
+          console.warn('Error validating day:', day, dayError);
+          return false;
+        }
       });
     } catch (error) {
       console.error('Error validating meal suggestions:', error);
