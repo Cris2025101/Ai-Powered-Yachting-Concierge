@@ -187,7 +187,7 @@ export function ChatInterface() {
           content: msg.content,
           sender: msg.sender
         }));
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${window.location.origin}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
