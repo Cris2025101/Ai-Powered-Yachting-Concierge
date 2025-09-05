@@ -11,13 +11,36 @@ function isRelevantAnswer(question: string, answer: string): boolean {
   return true;
 }
 
+// Enhanced error handling for OpenAI API
+function handleOpenAIError(error: any): { message: string; status: number } {
+  console.error('OpenAI API Error:', error);
+  
+  if (error?.status === 401) {
+    return { message: 'OpenAI API key is invalid or expired', status: 500 };
+  }
+  
+  if (error?.status === 429) {
+    return { message: 'Rate limit exceeded. Please try again later', status: 429 };
+  }
+  
+  if (error?.status === 500) {
+    return { message: 'OpenAI service is temporarily unavailable', status: 503 };
+  }
+  
+  if (error?.code === 'insufficient_quota') {
+    return { message: 'OpenAI quota exceeded. Please contact support', status: 500 };
+  }
+  
+  if (error?.message?.includes('timeout')) {
+    return { message: 'Request timeout. Please try again', status: 408 };
+  }
+  
+  return { message: 'An unexpected error occurred', status: 500 };
+}
+
 export async function POST(req: Request) {
   try {
-    console.log('API route called');
-    console.log('OpenAI API Key available:', !!process.env.OPENAI_API_KEY);
-    console.log('OpenAI API Key length:', process.env.OPENAI_API_KEY?.length);
-    
-    // Validate request
+    // Validate OpenAI API key
     if (!process.env.OPENAI_API_KEY) {
       console.error('OpenAI API key is missing');
       return NextResponse.json(
@@ -26,17 +49,33 @@ export async function POST(req: Request) {
       );
     }
 
-    const { message, history = [] } = await req.json();
-    
-    if (!message) {
+    // Parse and validate request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        { error: 'Invalid JSON in request body' },
         { status: 400 }
       );
     }
 
-    console.log('Message received:', message);
-    console.log('API Key available:', !!process.env.OPENAI_API_KEY);
+    const { message, history = [] } = body;
+    
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Message is required and must be a non-empty string' },
+        { status: 400 }
+      );
+    }
+
+    // Validate history format
+    if (!Array.isArray(history)) {
+      return NextResponse.json(
+        { error: 'History must be an array' },
+        { status: 400 }
+      );
+    }
 
     // Check if the last question and answer are relevant
     if (history.length > 0) {
@@ -66,46 +105,44 @@ IMPORTANT: When users ask specific questions about yachts, destinations, or sail
       }
     ];
 
-    console.log('Calling OpenAI API...');
-    console.log('Messages being sent:', JSON.stringify(messages, null, 2));
-    
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages,
-      temperature: 0.3,
-      max_tokens: 150,
-      presence_penalty: 0.2,
-      frequency_penalty: 0.1,
-      top_p: 0.8,
-    });
-    console.log('OpenAI API response received');
-    console.log('Response content:', completion.choices[0]?.message?.content);
+    // Call OpenAI API with timeout and enhanced error handling
+    const completion = await Promise.race([
+      openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages,
+        temperature: 0.3,
+        max_tokens: 150,
+        presence_penalty: 0.2,
+        frequency_penalty: 0.1,
+        top_p: 0.8,
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 30000)
+      )
+    ]) as any;
 
-    if (!completion.choices[0]?.message?.content) {
-      throw new Error('No response from OpenAI');
+    // Validate OpenAI response
+    if (!completion?.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+      throw new Error('Invalid response structure from OpenAI');
+    }
+
+    const responseContent = completion.choices[0]?.message?.content;
+    if (!responseContent || typeof responseContent !== 'string') {
+      throw new Error('No valid content in OpenAI response');
     }
 
     return NextResponse.json({
-      content: completion.choices[0].message.content
+      content: responseContent
     });
   } catch (error) {
-    console.error('Detailed error in chat API:', error);
-    // Handle specific OpenAI errors
-    if (error instanceof Error) {
-      if (error.message.includes('API key')) {
-        return NextResponse.json(
-          { error: 'OpenAI API key is invalid' },
-          { status: 500 }
-        );
-      }
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
-    }
+    console.error('Chat API Error:', error);
+    
+    // Use enhanced error handling
+    const { message, status } = handleOpenAIError(error);
+    
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
-      { status: 500 }
+      { error: message },
+      { status }
     );
   }
 }
