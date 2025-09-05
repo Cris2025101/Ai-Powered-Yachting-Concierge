@@ -316,7 +316,7 @@ Budget is a key factor for recommendations. If user is a beginner or unfamiliar 
         ...messages.filter(msg => msg.sender === 'user' || msg.sender === 'ai').map(msg => ({ content: msg.content, sender: msg.sender })),
         { content: summary, sender: 'user' }
       ];
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${window.location.origin}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
