@@ -764,15 +764,7 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
         return;
       }
 
-      console.log('Starting provision generation with:', {
-        tripDuration,
-        totalPeople,
-        activeMeals,
-        budget,
-        dietaryPreferences,
-        mealPreferences,
-        allergyPreferences
-      });
+      // Starting provision generation
 
       // Flip to the provisions result card
       setIsProvisionsFlipped(false);
@@ -784,11 +776,7 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
       const activeMealPreferences = mealPreferences.filter(pref => pref.count > 0);
       const activeAllergies = allergyPreferences.filter(pref => pref.count > 0);
 
-      console.log('Active preferences:', {
-        dietary: activeDietaryPreferences,
-        meals: activeMealPreferences,
-        allergies: activeAllergies
-      });
+      // Processing user preferences
 
       // Format allergy notes
       const allergyNotes = activeAllergies.length > 0 
@@ -805,17 +793,7 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
       const totalKids = childAgeGroups.reduce((sum, g) => sum + g.count, 0);
       const adults = parseInt(totalPeople) - totalKids;
 
-      console.log('Making API request with:', {
-        tripDuration,
-        totalPeople: parseInt(totalPeople),
-        adults,
-        children: childAgeGroups.filter(g => g.count > 0),
-        dietaryPreferences: activeDietaryPreferences,
-        mealPreferences: activeMealPreferences,
-        budget,
-        additionalNotes: combinedNotes,
-        kidsNotes
-      });
+      // Making API request
 
       // Call the API
       const response = await fetch('/api/provisions', {
@@ -836,11 +814,11 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
         }),
       });
 
-      console.log('API response status:', response.status);
+      // Processing API response
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API error response:', errorData);
+        // API error response received
         
         if (response.status === 422 && errorData.details) {
           const details = errorData.details as BudgetErrorDetails;
@@ -878,22 +856,18 @@ Would you like to:
       }
 
       const data = await response.json();
-      console.log('API success response:', {
-        categoriesCount: data.provisionsList?.length,
-        mealsCount: data.mealSuggestions?.length,
-        data
-      });
+      // API success response received
       
       // Validate that the response only includes selected meal types
       if (!validateMealSuggestions(data.mealSuggestions)) {
-        console.error('Invalid meal suggestions:', data.mealSuggestions);
+        // Invalid meal suggestions received
         throw new Error('Received meal suggestions for unselected meal types');
       }
 
       setProvisionsList(data.provisionsList);
       setMealSuggestions(data.mealSuggestions);
     } catch (err) {
-      console.error('Error generating provisions:', err);
+      // Error generating provisions
       setError(err instanceof Error ? err.message : 'Failed to generate provisions list');
       // Flip back to the form on error
       setIsProvisionsFlipped(true);
@@ -956,7 +930,7 @@ Would you like to:
       setProvisionsList(data.provisionsList);
       setMealSuggestions(data.mealSuggestions);
     } catch (err) {
-      console.error('Error regenerating provisions:', err);
+      // Error regenerating provisions
       setError(err instanceof Error ? err.message : 'Failed to regenerate provisions list');
     } finally {
       setIsGeneratingProvisions(false);
@@ -1113,7 +1087,7 @@ The menu now includes premium ingredients and luxury items while maintaining all
       
       // Validate that the response only includes selected meal types
       if (!validateMealSuggestions(data.mealSuggestions)) {
-        console.error('Invalid meal suggestions:', data.mealSuggestions);
+        // Invalid meal suggestions received
         throw new Error('Received invalid meal suggestions. Please try again.');
       }
 
@@ -1131,7 +1105,7 @@ Successfully enhanced menu with premium items!
 The menu now includes premium ingredients and luxury items while maintaining all dietary preferences.`);
       
     } catch (err) {
-      console.error('Error enhancing provisions:', err);
+      // Error enhancing provisions
       
       // Handle specific price validation errors more gracefully
       if (err instanceof Error && err.message.includes('Invalid price')) {

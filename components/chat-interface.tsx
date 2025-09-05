@@ -102,6 +102,62 @@ export function ChatInterface() {
   const [lastQuestionType, setLastQuestionType] = useState<'structured' | 'control' | 'followup' | null>(null);
   const [lastControlContext, setLastControlContext] = useState<string | null>(null);
 
+  // Centralized API call function
+  const sendMessageToAPI = async (message: string, messageHistory: Message[]) => {
+    try {
+      const history = messageHistory
+        .filter(msg => msg.id !== 'welcome')
+        .map(msg => ({
+          content: msg.content,
+          sender: msg.sender
+        }));
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ 
+          message,
+          history
+        }),
+      });
+      
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error('Received non-JSON response from server');
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.content,
+        sender: "ai",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, aiMessage])
+    } catch (error) {
+      console.error('Chat API Error:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again later.",
+        sender: "ai",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsTyping(false)
+    }
+  };
+
   // Add the new event listener
   useEffect(() => {
     const handleOpenChat = () => setIsOpen(true);
@@ -179,189 +235,8 @@ export function ChatInterface() {
       return;
     }
 
-    // Send ALL messages directly to API for better responses
-    try {
-      const history = messages
-        .filter(msg => msg.id !== 'welcome')
-        .map(msg => ({
-          content: msg.content,
-          sender: msg.sender
-        }));
-      
-      console.log('Sending request to /api/chat with:', { message, history });
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          message,
-          history
-        }),
-      });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error('Received non-JSON response from server');
-      }
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get AI response');
-      }
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.content,
-        sender: "ai",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiMessage])
-    } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again later.",
-        sender: "ai",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
-    } finally {
-      setIsTyping(false)
-    }
-    setLastQuestionType('structured');
-    setLastControlContext(null);
-    return;
-
-    // Save answer to tripRequirements
-    const updatedRequirements = { ...tripRequirements };
-    const qIdx = currentQuestionIndex;
-    const keys = [
-      'sailingWith',
-      'experienceLevel',
-      'sailingArea',
-      'groupSize',
-      'budget',
-      'departurePort',
-      'specialRequirements',
-    ];
-    updatedRequirements[keys[qIdx]] = message;
-    setTripRequirements(updatedRequirements);
-
-    // If just answered the area question, ask about experience in that area
-    if (qIdx === 2) {
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `q_area_exp` ,
-            content: `Have you sailed in ${message} before?`,
-            sender: "ai",
-            timestamp: new Date(),
-          }
-        ]);
-        setCurrentQuestionIndex(idx => idx + 1); // skip to next question after this
-        setIsTyping(false);
-      }, 600);
-      setLastQuestionType('structured');
-      setLastControlContext(null);
-      return;
-    }
-
-    // If just answered the area experience question, continue with next question
-    if (qIdx === 3 && messages[messages.length-1]?.id === 'q_area_exp') {
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `q${qIdx}`,
-            content: questions[qIdx],
-            sender: "ai",
-            timestamp: new Date(),
-          }
-        ]);
-        setCurrentQuestionIndex(idx => idx + 1);
-        setIsTyping(false);
-      }, 600);
-      setLastQuestionType('structured');
-      setLastControlContext(null);
-      return;
-    }
-
-    // If not last question, ask next question
-    if (currentQuestionIndex < questions.length - 1) {
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `q${currentQuestionIndex + 1}`,
-            content: questions[currentQuestionIndex + 1],
-            sender: "ai",
-            timestamp: new Date(),
-          }
-        ]);
-        setCurrentQuestionIndex(idx => idx + 1);
-        setIsTyping(false);
-      }, 600);
-      setLastQuestionType('structured');
-      setLastControlContext(null);
-      return;
-    }
-
-    // If all questions answered, send summary to API
-    try {
-      // Compose a more human, context-aware summary for the AI
-      const summary = `User context: Sailing with: ${updatedRequirements.sailingWith}; Experience: ${updatedRequirements.experienceLevel}; Sailed area before: ${updatedRequirements.sailedAreaBefore}; Area: ${updatedRequirements.sailingArea}; Group size: ${updatedRequirements.groupSize}; Budget (very important): ${updatedRequirements.budget}; Departure port: ${updatedRequirements.departurePort}; Special requirements: ${updatedRequirements.specialRequirements}.
-
-Budget is a key factor for recommendations. If user is a beginner or unfamiliar with the area, recommend a safe, beginner-friendly area (e.g., Greece Alimos). Suggest a suitable catamaran (e.g., Lagoon 42) for the group size, emphasizing comfort and space. End by asking: 'Would you like to search the exact price for this boat?'. Make the conversation warm and human.`;
-      const history = [
-        ...messages.filter(msg => msg.sender === 'user' || msg.sender === 'ai').map(msg => ({ content: msg.content, sender: msg.sender })),
-        { content: summary, sender: 'user' }
-      ];
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          message: summary,
-          history
-        }),
-      });
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error('Received non-JSON response from server');
-      }
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get AI response');
-      }
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.content,
-        sender: "ai",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiMessage])
-    } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again later.",
-        sender: "ai",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
-    } finally {
-      setIsTyping(false)
-    }
+    // Send message to API
+    await sendMessageToAPI(message, messages);
     setLastQuestionType('structured');
     setLastControlContext(null);
   }

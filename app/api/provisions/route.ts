@@ -500,7 +500,6 @@ IMPORTANT VALIDATION RULES:
 `;
 
     // Call OpenAI API
-    console.log('Calling OpenAI API...');
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [
@@ -518,23 +517,18 @@ IMPORTANT VALIDATION RULES:
     });
 
     if (!completion.choices[0]?.message?.content) {
-      console.error('No content in OpenAI response');
       throw new Error('No response from OpenAI');
     }
-
-    console.log('Received OpenAI response');
     
     // Parse and validate the response
     let response;
     try {
       response = JSON.parse(completion.choices[0].message.content);
     } catch (error) {
-      console.error('Failed to parse OpenAI response:', error);
       throw new Error('Invalid response format from OpenAI');
     }
     
     if (!response.provisionsList || !response.mealSuggestions) {
-      console.error('Missing required fields in response:', response);
       throw new Error('Invalid response format from OpenAI');
     }
 
@@ -584,7 +578,6 @@ IMPORTANT VALIDATION RULES:
       
       for (const item of category.items) {
         if (!item.estimatedPrice || item.estimatedPrice <= 0) {
-          console.error('Invalid item price:', item);
           throw new Error(`Invalid price for item: ${item.name}`);
         }
 
@@ -773,8 +766,6 @@ IMPORTANT VALIDATION RULES:
       adjustedProvisionsList
     });
   } catch (error) {
-    console.error('Error in provisions API:', error);
-    
     if (error instanceof Error) {
       return NextResponse.json(
         { error: error.message },
