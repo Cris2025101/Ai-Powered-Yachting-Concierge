@@ -14,6 +14,8 @@ function isRelevantAnswer(question: string, answer: string): boolean {
 export async function POST(req: Request) {
   try {
     console.log('API route called');
+    console.log('OpenAI API Key available:', !!process.env.OPENAI_API_KEY);
+    console.log('OpenAI API Key length:', process.env.OPENAI_API_KEY?.length);
     
     // Validate request
     if (!process.env.OPENAI_API_KEY) {
@@ -65,6 +67,8 @@ IMPORTANT: When users ask specific questions about yachts, destinations, or sail
     ];
 
     console.log('Calling OpenAI API...');
+    console.log('Messages being sent:', JSON.stringify(messages, null, 2));
+    
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages,
@@ -75,6 +79,7 @@ IMPORTANT: When users ask specific questions about yachts, destinations, or sail
       top_p: 0.8,
     });
     console.log('OpenAI API response received');
+    console.log('Response content:', completion.choices[0]?.message?.content);
 
     if (!completion.choices[0]?.message?.content) {
       throw new Error('No response from OpenAI');
