@@ -316,27 +316,6 @@ export default function GlassHeader() {
                         </button>
                       </motion.div>
                     )}
-                    {/* Add Chat with AI button to menu */}
-                    <motion.div
-                      key="chat-with-ai"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.1 + (menuItems.length + 1) * 0.1 }}
-                    >
-                      <button
-                        className="flex items-center w-full p-3 rounded-lg hover:bg-white/10 transition-colors text-left relative overflow-hidden group"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false)
-                          handleChatOpen()
-                        }}
-                      >
-                        {/* Chat button hover gradient */}
-                        <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-
-                        <MessageSquare className="h-5 w-5 mr-3 relative z-10" />
-                        <span className="font-medium relative z-10">Chat with AI</span>
-                      </button>
-                    </motion.div>
                   </div>
                 </nav>
               </div>
