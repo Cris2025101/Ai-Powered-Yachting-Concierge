@@ -340,6 +340,54 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
 
   // Add state for budget
   const [budget, setBudget] = useState(1000)
+
+  // Add function to handle sending messages
+  const handleSendMessage = async () => {
+    if (!currentMessage.trim() || isSendingMessage) return;
+
+    try {
+      setIsSendingMessage(true);
+      
+      // Add user message to chat
+      const newMessage = { role: 'user' as const, content: currentMessage };
+      setChatMessages(prev => [...prev, newMessage]);
+      setCurrentMessage('');
+
+      // Call provisions chat API
+      const response = await fetch('/api/provisions-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          context: {
+            tripDuration,
+            totalPeople,
+            dietaryPreferences,
+            provisionsList,
+            mealSuggestions,
+          },
+          history: chatMessages
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      
+      // Add AI response to chat
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
   const [showBudgetOptions, setShowBudgetOptions] = useState(false)
 
   // Add allergy state
@@ -2316,52 +2364,5 @@ The menu now includes premium ingredients and luxury items while maintaining all
     </>
   )
 
-  // Add function to handle sending messages
-  const handleSendMessage = async () => {
-    if (!currentMessage.trim() || isSendingMessage) return;
-
-    try {
-      setIsSendingMessage(true);
-      
-      // Add user message to chat
-      const newMessage = { role: 'user' as const, content: currentMessage };
-      setChatMessages(prev => [...prev, newMessage]);
-      setCurrentMessage('');
-
-      // Call provisions chat API
-      const response = await fetch('/api/provisions-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: currentMessage,
-          context: {
-            tripDuration,
-            totalPeople,
-            dietaryPreferences,
-            provisionsList,
-            mealSuggestions,
-          },
-          history: chatMessages
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
-      
-      // Add AI response to chat
-      setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
-      
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
-    } finally {
-      setIsSendingMessage(false);
-    }
-  };
 }
 
