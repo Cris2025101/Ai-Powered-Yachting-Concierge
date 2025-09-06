@@ -33,14 +33,6 @@ const publicMenuItems: MenuItem[] = [
     title: "WhatsApp Business",
     href: "/whatsapp-business",
   },
-  {
-    title: "Chat with AI",
-    href: "#",
-    onClick: () => {
-      const event = new CustomEvent('open-chat')
-      window.dispatchEvent(event)
-    }
-  },
 ]
 
 export default function GlassHeader() {
@@ -298,12 +290,32 @@ export default function GlassHeader() {
                         </Link>
                       </motion.div>
                     ))}
+                    {/* Chat with AI button */}
+                    <motion.div
+                      key="chat-with-ai"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 + menuItems.length * 0.1 }}
+                    >
+                      <button
+                        onClick={() => {
+                          const event = new CustomEvent('open-chat')
+                          window.dispatchEvent(event)
+                          setIsMobileMenuOpen(false)
+                        }}
+                        className="flex items-center w-full p-3 rounded-lg hover:bg-white/10 transition-colors text-left relative overflow-hidden group"
+                      >
+                        <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                        <span className="font-medium relative z-10">Chat with AI</span>
+                      </button>
+                    </motion.div>
+
                     {user && (
                       <motion.div
                         key="sign-out"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 + menuItems.length * 0.1 }}
+                        transition={{ duration: 0.3, delay: 0.1 + (menuItems.length + 1) * 0.1 }}
                       >
                         <button
                           onClick={() => {
