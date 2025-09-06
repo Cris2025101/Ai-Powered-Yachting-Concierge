@@ -332,6 +332,12 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
   const [kidsNotes, setKidsNotes] = useState("")
   const [error, setError] = useState<string | null>(null)
 
+  // Add new state for chat
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   // Add state for budget
   const [budget, setBudget] = useState(1000)
   const [showBudgetOptions, setShowBudgetOptions] = useState(false)
@@ -1940,14 +1946,65 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                                 </div>
 
                                             {/* Add chat component */}
-                                            <ProvisionsChat
-                                              provisionsList={provisionsList}
-                                              mealSuggestions={mealSuggestions}
-                                              tripDuration={tripDuration}
-                                              totalPeople={parseInt(totalPeople)}
-                                              dietaryPreferences={dietaryPreferences}
-                                              mealPreferences={mealPreferences}
-                                            />
+                                            {/* Chat with AI Assistant */}
+                                            <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-4">
+                                              <div className="flex justify-between items-center mb-3">
+                                                <h4 className="font-medium text-emerald-400">Chat with AI Assistant</h4>
+                                              </div>
+                                              
+                                              {/* Chat Messages */}
+                                              <div 
+                                                ref={chatContainerRef}
+                                                className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar mb-4"
+                                              >
+                                                {chatMessages.map((message, index) => (
+                                                  <div
+                                                    key={index}
+                                                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                  >
+                                                    <div
+                                                      className={`max-w-[80%] rounded-lg p-3 ${
+                                                        message.role === 'user'
+                                                          ? 'bg-emerald-500/20 text-white ml-auto'
+                                                          : 'bg-white/10 text-white/90'
+                                                      }`}
+                                                    >
+                                                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                                {isSendingMessage && (
+                                                  <div className="flex justify-start">
+                                                    <div className="bg-white/10 rounded-lg p-3">
+                                                      <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Message Input */}
+                                              <div className="flex items-center space-x-2">
+                                                <input
+                                                  type="text"
+                                                  value={currentMessage}
+                                                  onChange={(e) => setCurrentMessage(e.target.value)}
+                                                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                                  placeholder="Ask about recipes, adjustments, or details..."
+                                                  className="flex-1 bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                                />
+                                                <button
+                                                  onClick={handleSendMessage}
+                                                  disabled={isSendingMessage || !currentMessage.trim()}
+                                                  className="px-4 py-2 rounded-md bg-emerald-500/80 text-white hover:bg-emerald-500/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                                >
+                                                  {isSendingMessage ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                  ) : (
+                                                    <span>Send</span>
+                                                  )}
+                                                </button>
+                                              </div>
+                                            </div>
                                           </motion.div>
                                         ) : (
                                           <motion.div
@@ -2034,14 +2091,65 @@ The menu now includes premium ingredients and luxury items while maintaining all
                                             </div>
 
                                             {/* Add chat component */}
-                                            <ProvisionsChat
-                                              provisionsList={provisionsList}
-                                              mealSuggestions={mealSuggestions}
-                                              tripDuration={tripDuration}
-                                              totalPeople={parseInt(totalPeople)}
-                                              dietaryPreferences={dietaryPreferences}
-                                              mealPreferences={mealPreferences}
-                                            />
+                                            {/* Chat with AI Assistant */}
+                                            <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-md p-4">
+                                              <div className="flex justify-between items-center mb-3">
+                                                <h4 className="font-medium text-emerald-400">Chat with AI Assistant</h4>
+                                              </div>
+                                              
+                                              {/* Chat Messages */}
+                                              <div 
+                                                ref={chatContainerRef}
+                                                className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar mb-4"
+                                              >
+                                                {chatMessages.map((message, index) => (
+                                                  <div
+                                                    key={index}
+                                                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                  >
+                                                    <div
+                                                      className={`max-w-[80%] rounded-lg p-3 ${
+                                                        message.role === 'user'
+                                                          ? 'bg-emerald-500/20 text-white ml-auto'
+                                                          : 'bg-white/10 text-white/90'
+                                                      }`}
+                                                    >
+                                                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                                {isSendingMessage && (
+                                                  <div className="flex justify-start">
+                                                    <div className="bg-white/10 rounded-lg p-3">
+                                                      <Loader2 className="w-5 h-5 text-emerald-400 animate-spin" />
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Message Input */}
+                                              <div className="flex items-center space-x-2">
+                                                <input
+                                                  type="text"
+                                                  value={currentMessage}
+                                                  onChange={(e) => setCurrentMessage(e.target.value)}
+                                                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                                  placeholder="Ask about recipes, adjustments, or details..."
+                                                  className="flex-1 bg-white/5 border border-white/20 rounded-md px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                                />
+                                                <button
+                                                  onClick={handleSendMessage}
+                                                  disabled={isSendingMessage || !currentMessage.trim()}
+                                                  className="px-4 py-2 rounded-md bg-emerald-500/80 text-white hover:bg-emerald-500/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                                >
+                                                  {isSendingMessage ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                  ) : (
+                                                    <span>Send</span>
+                                                  )}
+                                                </button>
+                                              </div>
+                                            </div>
                                           </motion.div>
                                         )}
                                       </AnimatePresence>
@@ -2207,5 +2315,53 @@ The menu now includes premium ingredients and luxury items while maintaining all
       </AnimatePresence>
     </>
   )
+
+  // Add function to handle sending messages
+  const handleSendMessage = async () => {
+    if (!currentMessage.trim() || isSendingMessage) return;
+
+    try {
+      setIsSendingMessage(true);
+      
+      // Add user message to chat
+      const newMessage = { role: 'user' as const, content: currentMessage };
+      setChatMessages(prev => [...prev, newMessage]);
+      setCurrentMessage('');
+
+      // Call provisions chat API
+      const response = await fetch('/api/provisions-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          context: {
+            tripDuration,
+            totalPeople,
+            dietaryPreferences,
+            provisionsList,
+            mealSuggestions,
+          },
+          history: chatMessages
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
+      
+      // Add AI response to chat
+      setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 }
 
