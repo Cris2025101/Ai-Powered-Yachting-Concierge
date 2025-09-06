@@ -499,48 +499,63 @@ IMPORTANT VALIDATION RULES:
 `;
 
                 // Call OpenAI API directly with timeout
-                const completion = await Promise.race([
-                  fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      model: "gpt-4-turbo-preview",
-                      messages: [
-                        {
-                          role: "system",
-                          content: "You are a luxury yacht provisioning expert. Provide concise, well-organized responses in the exact JSON format requested. Keep responses under 2000 tokens."
-                        },
-                        {
-                          role: "user",
-                          content: prompt
-                        }
-                      ],
-                      temperature: 0.7,
-                      max_tokens: 2000,
-                      response_format: { type: "json_object" }
-                    })
-                  }).then(res => res.json()),
-                  new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timeout')), 25000)
-                  )
-                ]) as any;
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    model: "gpt-4-turbo-preview",
+                    messages: [
+                      {
+                        role: "system",
+                        content: "You are a luxury yacht provisioning expert. Provide concise, well-organized responses in the exact JSON format requested. Keep responses under 2000 tokens."
+                      },
+                      {
+                        role: "user",
+                        content: prompt
+                      }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 2000,
+                    response_format: { type: "json_object" }
+                  })
+                });
 
-    if (!completion.choices[0]?.message?.content) {
-      throw new Error('No response from OpenAI');
-    }
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  console.error('OpenAI API error:', response.status, errorText);
+                  throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+                }
+
+                const completion = await response.json();
+
+                // Check if completion has error
+                if (completion.error) {
+                  console.error('OpenAI API error:', completion.error);
+                  throw new Error(`OpenAI API error: ${completion.error.message}`);
+                }
+
+                if (!completion || !completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+                  console.error('Invalid completion structure:', completion);
+                  throw new Error('No response from OpenAI');
+                }
+                
+                if (!completion.choices[0]?.message?.content) {
+                  console.error('No message content in completion:', completion.choices[0]);
+                  throw new Error('No response from OpenAI');
+                }
     
     // Parse and validate the response
-    let response;
+    let parsedResponse;
     try {
-      response = JSON.parse(completion.choices[0].message.content);
+      parsedResponse = JSON.parse(completion.choices[0].message.content);
     } catch (error) {
       throw new Error('Invalid response format from OpenAI');
     }
     
-    if (!response.provisionsList || !response.mealSuggestions) {
+    if (!parsedResponse.provisionsList || !parsedResponse.mealSuggestions) {
       throw new Error('Invalid response format from OpenAI');
     }
 
@@ -548,7 +563,7 @@ IMPORTANT VALIDATION RULES:
     const waterNeeds = calculateWaterNeeds(days, body.totalPeople);
 
     // First, remove ALL water items from the response
-    response.provisionsList = response.provisionsList.filter((category: ProvisionCategory) => {
+    parsedResponse.provisionsList = parsedResponse.provisionsList.filter((category: ProvisionCategory) => {
       if (category.category.toLowerCase().includes('water')) {
         return false;
       }
@@ -560,7 +575,7 @@ IMPORTANT VALIDATION RULES:
     });
 
     // Then add our calculated water categories with correct quantities
-    response.provisionsList.unshift({
+    parsedResponse.provisionsList.unshift({
       category: 'Still Water',
       items: [{
         name: 'Still Water',
@@ -569,7 +584,7 @@ IMPORTANT VALIDATION RULES:
       }]
     });
 
-    response.provisionsList.unshift({
+    parsedResponse.provisionsList.unshift({
       category: 'Mineral Water',
       items: [{
         name: 'Mineral Water',
@@ -584,7 +599,7 @@ IMPORTANT VALIDATION RULES:
     const categoryDetails: { [key: string]: { total: number; items: any[] } } = {};
 
     // Process each category
-    for (const category of response.provisionsList) {
+    for (const category of parsedResponse.provisionsList) {
       let categoryTotal = 0;
       categoryDetails[category.category] = { total: 0, items: [] };
       
@@ -666,8 +681,8 @@ IMPORTANT VALIDATION RULES:
     }
 
     // After generating the meal suggestions, validate and adjust provisions
-    const extractedIngredients = extractIngredientsFromMeals(response.mealSuggestions);
-    let adjustedProvisionsList = response.provisionsList;
+    const extractedIngredients = extractIngredientsFromMeals(parsedResponse.mealSuggestions);
+    let adjustedProvisionsList = parsedResponse.provisionsList;
 
     // Ensure all extracted ingredients are in the provisions list
     extractedIngredients.forEach(ingredient => {
@@ -703,47 +718,47 @@ IMPORTANT VALIDATION RULES:
 
     // After parsing the OpenAI response and before returning the result
     // Ensure mealSuggestions has an entry for every day of the trip
-    if (response.mealSuggestions && response.mealSuggestions.length < days) {
+    if (parsedResponse.mealSuggestions && parsedResponse.mealSuggestions.length < days) {
       // If only 1 or 2 entries, expand to full days
       const expanded = [];
-      if (response.mealSuggestions.length === 1) {
+      if (parsedResponse.mealSuggestions.length === 1) {
         // Duplicate the single entry for all days
         for (let i = 0; i < days; i++) {
           expanded.push({
             day: `Day ${i + 1}`,
-            meals: response.mealSuggestions[0].meals
+            meals: parsedResponse.mealSuggestions[0].meals
           });
         }
-      } else if (response.mealSuggestions.length === 2) {
+      } else if (parsedResponse.mealSuggestions.length === 2) {
         // Use the first for Day 1, the second for all other days
-        expanded.push({ day: 'Day 1', meals: response.mealSuggestions[0].meals });
+        expanded.push({ day: 'Day 1', meals: parsedResponse.mealSuggestions[0].meals });
         for (let i = 1; i < days; i++) {
           expanded.push({
             day: `Day ${i + 1}`,
-            meals: response.mealSuggestions[1].meals
+            meals: parsedResponse.mealSuggestions[1].meals
           });
         }
       } else {
         // If more than 2 but less than days, repeat as needed
         for (let i = 0; i < days; i++) {
-          const template = response.mealSuggestions[i % response.mealSuggestions.length];
+          const template = parsedResponse.mealSuggestions[i % parsedResponse.mealSuggestions.length];
           expanded.push({
             day: `Day ${i + 1}`,
             meals: template.meals
           });
         }
       }
-      response.mealSuggestions = expanded;
+      parsedResponse.mealSuggestions = expanded;
     }
 
     // Success response
     return NextResponse.json({
       provisionsList: [
         // Water categories first
-        ...response.provisionsList.filter((cat: ProvisionCategory) => cat.category === 'Still Water'),
-        ...response.provisionsList.filter((cat: ProvisionCategory) => cat.category === 'Mineral Water'),
+        ...parsedResponse.provisionsList.filter((cat: ProvisionCategory) => cat.category === 'Still Water'),
+        ...parsedResponse.provisionsList.filter((cat: ProvisionCategory) => cat.category === 'Mineral Water'),
         // Other categories (excluding water items)
-        ...response.provisionsList.filter((cat: ProvisionCategory) => {
+        ...parsedResponse.provisionsList.filter((cat: ProvisionCategory) => {
           // Skip water categories
           if (cat.category.toLowerCase().includes('water')) {
             return false;
@@ -755,7 +770,7 @@ IMPORTANT VALIDATION RULES:
           return cat.category !== 'Snacks' && cat.category !== 'Snack Options';
         }),
         // Consolidated snacks at the end
-        ...response.provisionsList.filter((cat: ProvisionCategory) => 
+        ...parsedResponse.provisionsList.filter((cat: ProvisionCategory) => 
           cat.category === 'Snacks' || 
           cat.category === 'Snack Options'
         ).reduce((acc: ProvisionCategory[], curr: ProvisionCategory) => {
@@ -770,7 +785,7 @@ IMPORTANT VALIDATION RULES:
           return acc;
         }, [] as ProvisionCategory[])
       ],
-      mealSuggestions: response.mealSuggestions,
+      mealSuggestions: parsedResponse.mealSuggestions,
       totalCost,
       remainingBudget: body.budget - totalCost,
       categoryTotals,
