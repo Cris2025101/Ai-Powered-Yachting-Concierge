@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { MessageSquare, Menu, X, User, LogOut } from "lucide-react"
+import { Menu, X, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { YagaAiLogo } from "./yaga-logo"
 import { createClient } from "@/lib/supabase/client"
@@ -73,10 +73,6 @@ export default function GlassHeader() {
     }
   }
 
-  const handleChatOpen = () => {
-    const event = new CustomEvent('open-chat')
-    window.dispatchEvent(event)
-  }
 
   // Handle scroll events
   useEffect(() => {
