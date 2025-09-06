@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, Grid, Anchor, Users, User, ArrowUp, X, Loader2, Download, Printer, Edit, RefreshCw } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { CharterBookingModal } from "./charter-booking-modal"
 import { PanPanModal } from "./panpan-modal"
 import { ProvisionsChat } from "./provisions-chat"
@@ -680,12 +680,12 @@ export function NavigationModal({ isOpen, onClose }: NavigationModalProps) {
 
   const validateMealSuggestions = (suggestions: DayMealPlan[]): boolean => {
     try {
-      const activeMealTypes = getActiveMealTypes();
-      
-      // Log for debugging
-      console.log('Active meal types:', activeMealTypes);
-      console.log('Received meal suggestions:', suggestions);
-      
+    const activeMealTypes = getActiveMealTypes();
+    
+    // Log for debugging
+    console.log('Active meal types:', activeMealTypes);
+    console.log('Received meal suggestions:', suggestions);
+    
       // Check if suggestions is valid
       if (!suggestions || !Array.isArray(suggestions)) {
         console.warn('Invalid suggestions format:', suggestions);
@@ -1117,7 +1117,7 @@ The menu now includes premium ingredients and luxury items while maintaining all
       if (err instanceof Error && err.message.includes('Invalid price')) {
         setError('There was an issue with item pricing. Please try again or contact support if the problem persists.');
       } else {
-        setError(err instanceof Error ? err.message : 'Failed to enhance provisions list');
+      setError(err instanceof Error ? err.message : 'Failed to enhance provisions list');
       }
     } finally {
       setIsGeneratingProvisions(false);
