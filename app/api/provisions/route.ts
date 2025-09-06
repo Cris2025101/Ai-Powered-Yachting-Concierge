@@ -498,29 +498,35 @@ IMPORTANT VALIDATION RULES:
 4. Cross-reference the meal plan with provisions to ensure nothing is missing
 `;
 
-    // Call OpenAI API directly
-    const completion = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: "gpt-4-turbo-preview",
-        messages: [
-          {
-            role: "system",
-            content: "You are a luxury yacht provisioning expert with extensive knowledge of food quantities, storage, meal planning, and cost management. You always provide precise, well-organized responses in the exact JSON format requested, ensuring all suggestions stay within the specified budget while maintaining quality standards."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        response_format: { type: "json_object" }
-      })
-    }).then(res => res.json());
+                // Call OpenAI API directly with timeout
+                const completion = await Promise.race([
+                  fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      model: "gpt-4-turbo-preview",
+                      messages: [
+                        {
+                          role: "system",
+                          content: "You are a luxury yacht provisioning expert. Provide concise, well-organized responses in the exact JSON format requested. Keep responses under 2000 tokens."
+                        },
+                        {
+                          role: "user",
+                          content: prompt
+                        }
+                      ],
+                      temperature: 0.7,
+                      max_tokens: 2000,
+                      response_format: { type: "json_object" }
+                    })
+                  }).then(res => res.json()),
+                  new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Request timeout')), 25000)
+                  )
+                ]) as any;
 
     if (!completion.choices[0]?.message?.content) {
       throw new Error('No response from OpenAI');

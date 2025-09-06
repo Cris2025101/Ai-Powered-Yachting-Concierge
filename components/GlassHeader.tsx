@@ -202,6 +202,15 @@ export default function GlassHeader() {
 
               {/* Right side actions */}
               <div className="flex items-center space-x-4 z-10">
+                {/* Chat Button (desktop) */}
+                <button
+                  onClick={handleChatOpen}
+                  className="hidden md:flex items-center px-4 py-2 rounded-lg bg-trend-yellow/20 hover:bg-trend-yellow/30 border border-trend-yellow/30 text-white font-medium transition-all duration-200 hover:scale-105"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat with AI
+                </button>
+
                 {/* Menu Button (visible on all screen sizes) */}
                 <div className="relative">
                   <button

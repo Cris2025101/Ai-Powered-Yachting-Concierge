@@ -112,6 +112,8 @@ export function ChatInterface() {
           sender: msg.sender
         }));
       
+      console.log('Sending message to API:', { message, history });
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -123,11 +125,18 @@ export function ChatInterface() {
           history
         }),
       });
+
+      console.log('API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       let data;
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
         data = await response.json();
+        console.log('API response data:', data);
       } else {
         const text = await response.text();
         throw new Error('Received non-JSON response from server');
@@ -146,9 +155,13 @@ export function ChatInterface() {
       setMessages((prev) => [...prev, aiMessage])
     } catch (error) {
       console.error('Chat API Error:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: error instanceof Error ? error.message : "I apologize, but I'm having trouble connecting right now. Please try again later.",
+        content: `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
         sender: "ai",
         timestamp: new Date(),
       }
