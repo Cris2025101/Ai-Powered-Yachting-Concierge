@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import openai from '@/lib/openai';
 
 // Add a simple backend validation function before constructing the messages array
 function isRelevantAnswer(question: string, answer: string): boolean {
@@ -105,17 +104,24 @@ IMPORTANT: When users ask specific questions about yachts, destinations, or sail
       }
     ];
 
-    // Call OpenAI API with timeout and enhanced error handling
+    // Call OpenAI API directly with timeout and enhanced error handling
     const completion = await Promise.race([
-      openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages,
-        temperature: 0.3,
-        max_tokens: 150,
-        presence_penalty: 0.2,
-        frequency_penalty: 0.1,
-        top_p: 0.8,
-      }),
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "gpt-4-turbo-preview",
+          messages,
+          temperature: 0.3,
+          max_tokens: 150,
+          presence_penalty: 0.2,
+          frequency_penalty: 0.1,
+          top_p: 0.8,
+        })
+      }).then(res => res.json()),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 30000)
       )
