@@ -33,6 +33,14 @@ const publicMenuItems: MenuItem[] = [
     title: "WhatsApp Business",
     href: "/whatsapp-business",
   },
+  {
+    title: "Chat with AI",
+    href: "#",
+    onClick: () => {
+      const event = new CustomEvent('open-chat')
+      window.dispatchEvent(event)
+    }
+  },
 ]
 
 export default function GlassHeader() {
